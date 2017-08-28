@@ -56,17 +56,14 @@ namespace FrameProcessing
 		// GRAY IMG MAT
 		Mat grayMat;
 
-		//portatint
-		[SerializeField]
-		bool portrait = false;
-        /// <summary>
-        /// Set this to specify the name of the device to use.
-        /// </summary>
+	
         public string requestedDeviceName = null;
-		//resize ration
+		[SerializeField]
+		bool resize = false;
+		//resize ratio
 		[SerializeField]
 		[Range(1f,0.05f)]
-		float resizeRatio = 0.5f;
+		float resizeRatio = 1f;
 		/// <summary>
 		/// 
 		/// 
@@ -83,7 +80,13 @@ namespace FrameProcessing
         /// Set the requested height of the camera device.
         /// </summary>
         public int requestedHeight = 480;
-        
+
+		//portatint
+		[SerializeField]
+		bool portrait = false;
+		/// <summary>
+		/// Set this to specify the name of the device to use.
+		/// </summary>
         /// <summary>
         /// Set the requested to using the front camera.
         /// </summary>
@@ -136,8 +139,7 @@ namespace FrameProcessing
 
 		//rgb mat
 		Mat rgbMat;
-		//inversionMat
-		Mat inversionMat;
+
 		//clone mat (temp)
 		Mat cloneMat;
 
@@ -288,10 +290,6 @@ namespace FrameProcessing
 				rgbMat.Dispose ();
 				rgbMat = null;
 			}
-			if (inversionMat != null) {
-				inversionMat.Dispose ();
-				inversionMat = null;
-			}
 			if (cloneMat != null) {
 				cloneMat.Dispose ();
 				cloneMat = null;
@@ -319,7 +317,7 @@ namespace FrameProcessing
 			grayMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
 			hierarchy = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
 			//grayMat = rgbaMat.clone ();
-			inversionMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1, new Scalar(255));
+			//inversionMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1, new Scalar(255));
 
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
             gameObject.transform.localScale = new Vector3 (webCamTexture.width, webCamTexture.height, 1);
@@ -366,6 +364,9 @@ namespace FrameProcessing
 		}
 		public void processFrame(){
 			if (showProcessing) {
+				if (resize) {
+					Imgproc.resize(grayMat,grayMat, new Size((int)Math.Round(resizeRatio*grayMat.width()),(int)Math.Round(resizeRatio*grayMat.height())));
+				}
 				//flip
 				Core.bitwise_not (grayMat, grayMat);
 				//
@@ -381,7 +382,7 @@ namespace FrameProcessing
 				}
 				if (edgeCenterPoint) {
 					Imgproc.Canny (grayMat, grayMat, thresholdValue * 0.5 , thresholdValue);
-					Imgproc.findContours (grayMat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE );
+					//Imgproc.findContours (grayMat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE );
 					//	
 //					foreach(MatOfPoint i in contours){
 //						Debug.Log ("contour " + i + ": " + i.ToString());
@@ -406,13 +407,15 @@ namespace FrameProcessing
 				//assign to display
 				rgbaMat = grayMat;
 
-
-
-				framesDropCount = 0;
+				if (resize) {
+					Imgproc.resize(grayMat,grayMat, new Size((int)Math.Round((1/resizeRatio)*grayMat.width()),(int)Math.Round((1/resizeRatio)*grayMat.height())));
+				}
 				//Debug.Log ("frame processed, time is: " + Time.fixedTime);
 			} else {
 				rgbaMat = cloneMat;
 			}
+			framesDropCount = 0;
+
 		}
         /// <summary>
         /// Raises the destroy event.
