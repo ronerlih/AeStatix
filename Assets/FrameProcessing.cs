@@ -12,8 +12,12 @@ using OpenCVForUnity;
 namespace FrameProcessing
 {
     /// <summary>
-    /// WebCamTexture to mat example.
-    /// An example of converting the WebCamTexture image to OpenCV's Mat format.
+    /// AeStatix real time image analysis.
+	/// 
+	/// 
+	/// 
+	/// 
+	/// 
     /// </summary>
 	public class FrameProcessing : MonoBehaviour
     {	
