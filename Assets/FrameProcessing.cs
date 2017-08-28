@@ -9,28 +9,28 @@ using UnityEngine.SceneManagement;
 #endif
 using OpenCVForUnity;
 
-namespace toneFrameProcessing
+namespace FrameProcessing
 {
     /// <summary>
     /// WebCamTexture to mat example.
     /// An example of converting the WebCamTexture image to OpenCV's Mat format.
     /// </summary>
-	public class toneFrameProcessing : MonoBehaviour
+	public class FrameProcessing : MonoBehaviour
     {	
 		[SerializeField]
 		bool showProcessing = true;
-
-		[SerializeField]
-		bool threshold = false;
-		[SerializeField]
-		[Range(1,255)]
-		double thresholdValue = 127.5f;
 
 		[SerializeField]
 		bool blur = false;
 		[SerializeField]
 		[Range(1,20)]
 		int blurSize = 3;
+
+		[SerializeField]
+		bool threshold = false;
+		[SerializeField]
+		[Range(1,255)]
+		double thresholdValue = 127.5f;
 
 		[SerializeField]
 		bool blobs = false;
