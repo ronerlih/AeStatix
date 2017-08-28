@@ -25,16 +25,20 @@ namespace FrameProcessing
 		bool showProcessing = true;
 
 		[SerializeField]
+		bool inversion = false;
+
+		[SerializeField]
 		bool blur = false;
 		[SerializeField]
 		[Range(1,20)]
 		int blurSize = 3;
 
 		[SerializeField]
-		bool threshold = false;
+		bool toneThreshold = false;
 		[SerializeField]
-		[Range(1,255)]
+		[Range(0,255)]
 		double thresholdValue = 127.5f;
+		int thresholdValueCap =2;
 
 		[SerializeField]
 		bool blobs = false;
@@ -42,9 +46,16 @@ namespace FrameProcessing
 		[SerializeField]
 		bool centerPoint = false;
 
+		List<Moments> moments = new List<Moments>();
+
+		[SerializeField]
+		bool edge = false;
 		[SerializeField]
 		bool edgeCenterPoint = false;
-			
+
+		[SerializeField]
+		bool mergeCenters = false;
+
 		int edgeThresh = 1;
 		int lowThreshold;
 		int  max_lowThreshold = 100;
@@ -58,7 +69,7 @@ namespace FrameProcessing
 		int framesDropCount =0;
 
 		// GRAY IMG MAT
-		Mat grayMat;
+		Mat toneMat;
 
 	
         public string requestedDeviceName = null;
@@ -286,9 +297,9 @@ namespace FrameProcessing
 				rgbaMat.Dispose ();
 				rgbaMat = null;
 			}
-			if (grayMat != null) {
-				grayMat.Dispose ();
-				grayMat = null;
+			if (toneMat != null) {
+				toneMat.Dispose ();
+				toneMat = null;
 			}
 			if (rgbMat != null) {
 				rgbMat.Dispose ();
@@ -318,9 +329,9 @@ namespace FrameProcessing
 			rgbaMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			cloneMat = rgbaMat.clone ();
 			//rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
-			grayMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
+			toneMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
 			hierarchy = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
-			//grayMat = rgbaMat.clone ();
+			//toneMat = rgbaMat.clone ();
 			//inversionMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1, new Scalar(255));
 
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
@@ -348,7 +359,7 @@ namespace FrameProcessing
 
             if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame) {
 				Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
-				Utils.webCamTextureToMat (webCamTexture, grayMat);
+				Utils.webCamTextureToMat (webCamTexture, toneMat);
 
 				//Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " SO:" + Screen.orientation, new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
 				//Debug.Log ("webcam ratio " + "( " + webCamTexture.width + ", " + webCamTexture.height + ")");
@@ -357,9 +368,9 @@ namespace FrameProcessing
 					processFrame ();
 				}
 
-				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height (), new Point ((int)Math.Round(rgbaMat.width() * 0.35), rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (180,180,180), 2, Imgproc.LINE_AA, false);
+				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height (), new Point ((int)Math.Round(rgbaMat.width() * 0.35), rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (180,1), 2, Imgproc.LINE_AA, false);
 				Utils.matToTexture2D (rgbaMat, texture);
-				//Utils.matToTexture2D (grayMat, textureGray);
+				//Utils.matToTexture2D (toneMat, textureGray);
 
             }
         	
@@ -367,57 +378,68 @@ namespace FrameProcessing
 
 		}
 		public void processFrame(){
-			if (showProcessing) {
-				if (resize) {
-					Imgproc.resize(grayMat,grayMat, new Size((int)Math.Round(resizeRatio*grayMat.width()),(int)Math.Round(resizeRatio*grayMat.height())));
-				}
+				if (inversion) {
 				//flip
-				Core.bitwise_not (grayMat, grayMat);
+				Core.bitwise_not (toneMat, toneMat);
+				}
+				if (resize) {
+					Imgproc.resize(toneMat,toneMat, new Size((int)Math.Round(resizeRatio*toneMat.width()),(int)Math.Round(resizeRatio*toneMat.height())));
+				}
 				//
-				if (threshold){
-					Imgproc.threshold ( grayMat, grayMat, thresholdValue, 255, Imgproc.THRESH_BINARY );
+				if (toneThreshold){
+					Imgproc.threshold ( toneMat, toneMat, thresholdValue, 255, Imgproc.THRESH_BINARY );
 				}
 				if (blobs) {
-					blobDetector.detect(grayMat, keypoints);
-					Features2d.drawKeypoints(grayMat, keypoints, grayMat);
+					blobDetector.detect(toneMat, keypoints);
+					Features2d.drawKeypoints(toneMat, keypoints, toneMat);
 				}
 				if (blur) {
-					Imgproc.blur( grayMat, grayMat, new Size(blurSize,blurSize) );
+					Imgproc.blur( toneMat, toneMat, new Size(blurSize,blurSize) );
 				}
-				if (edgeCenterPoint) {
-					Imgproc.Canny (grayMat, grayMat, thresholdValue * 0.5 , thresholdValue);
-					//Imgproc.findContours (grayMat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE );
+				if (centerPoint) {
+					moments.Add(Imgproc.moments (toneMat, true));
+					WeightedCentroid.Add(new Point((int)Math.Round(moments[0].m10 / moments[0].m00), (int)Math.Round(moments[0].m01 / moments[0].m00)));
+					Debug.Log("center: " + WeightedCentroid[0].x +", " + WeightedCentroid[0].y);
+				}
+				if (edge) {
+					Imgproc.Canny (toneMat, toneMat, thresholdValue * 0.5 , thresholdValue);
+					//Imgproc.findContours (toneMat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE );
 					//	
 //					foreach(MatOfPoint i in contours){
 //						Debug.Log ("contour " + i + ": " + i.ToString());
 //					}
-					Debug.Log ("contours count: " + contours.Count);
-
-					contours.Clear ();
-
+					//Debug.Log ("contours count: " + contours.Count);
+					moments.Add(Imgproc.moments (toneMat, true));
+				if (WeightedCentroid.Count == 0) {
+					moments.Add(Imgproc.moments (toneMat, true));
+					WeightedCentroid.Add(new Point(0,0));
 				}
-				if (centerPoint) {
-					Moments moments = new Moments();
-					moments = Imgproc.moments (grayMat, true);
-					WeightedCentroid.Add(new Point((int)Math.Round(moments.m10 / moments.m00), (int)Math.Round(moments.m01 / moments.m00)));
-					Debug.Log("centeroids: " + WeightedCentroid.Count);
-
-					Imgproc.ellipse (grayMat, WeightedCentroid [0], new Size (20, 20), 1, 0.1, 360, new Scalar (180),10);
-					Imgproc.putText(grayMat, "  center point", WeightedCentroid [0], 0, 1.5, new Scalar(180),5);
-
-					WeightedCentroid.Clear ();
-					//moments.Clear ();
+					WeightedCentroid.Add(new Point((int)Math.Round(moments[1].m10 / moments[1].m00), (int)Math.Round(moments[1].m01 / moments[1].m00)));
+					
+				if (thresholdValue >= thresholdValueCap && edgeCenterPoint == true) {
+					Imgproc.ellipse (toneMat, WeightedCentroid [1], new Size (20, 20), 1, 0.1, 360, new Scalar (180), 10);
+					Imgproc.putText (toneMat, " Edge center point", WeightedCentroid [1], 0, 1.5, new Scalar (180), 5);
+				}
+				}
+				//draw center
+				if(centerPoint ){
+					Imgproc.ellipse (toneMat, WeightedCentroid [0], new Size (20, 20), 1, 0.1, 360, new Scalar (180),10);
+					Imgproc.putText(toneMat, " Tone center point", WeightedCentroid [0], 0, 1.5, new Scalar(180),5);
+				}
+				if (resize) {
+					Imgproc.resize(toneMat,toneMat, new Size((int)Math.Round((1/resizeRatio)*toneMat.width()),(int)Math.Round((1/resizeRatio)*toneMat.height())));
 				}
 				//assign to display
-				rgbaMat = grayMat;
-
-				if (resize) {
-					Imgproc.resize(grayMat,grayMat, new Size((int)Math.Round((1/resizeRatio)*grayMat.width()),(int)Math.Round((1/resizeRatio)*grayMat.height())));
-				}
-				//Debug.Log ("frame processed, time is: " + Time.fixedTime);
+			if (showProcessing) {
+				rgbaMat = toneMat;
 			} else {
 				rgbaMat = cloneMat;
 			}
+
+			WeightedCentroid.Clear ();
+			moments.Clear ();
+			contours.Clear ();
+	
 			framesDropCount = 0;
 
 		}
