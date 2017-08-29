@@ -21,29 +21,25 @@ namespace FrameProcessingChannels
     /// </summary>
 	public class FrameProcessingChannels : MonoBehaviour
     {	
-		[SerializeField]
 		bool showProcessing = true;
 
-		[SerializeField]
 		bool inversion = true;
 
-		[SerializeField]
 		bool blur = true;
 		[SerializeField]
 		[Range(1,20)]
 		int blurSize = 3;
 
-		[SerializeField]
 		bool toneThreshold = true;
 		[SerializeField]
 		[Range(0,255)]
 		double thresholdValue = 127.5f;
 		int thresholdValueCap =2;
 
-		[SerializeField]
 		bool centerPoint = true;
 
 		List<Moments> moments = new List<Moments>();
+		List<Moments> momentsEdge = new List<Moments>();
 
 		[SerializeField]
 		bool edge = false;
@@ -62,6 +58,7 @@ namespace FrameProcessingChannels
 		List< MatOfPoint > contours = new List<MatOfPoint>(); 	
 
 		List<Point> WeightedCentroid = new List<Point>();
+		List<Point> WeightedCentroidEdge = new List<Point>();
 
 		int framesDropCount =0;
 
@@ -425,6 +422,28 @@ namespace FrameProcessingChannels
 					rgbMat = cloneMat;
 				}					
 			}
+
+			if (edge) {
+				Imgproc.Canny( toneMat, toneMat, thresholdValue * 0.5 , thresholdValue);
+				//Imgproc.findContours (channel, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE );
+				//	
+				//					foreach(MatOfPoint i in contours){
+				//						Debug.Log ("contour " + i + ": " + i.ToString());
+				//					}
+				//Debug.Log ("contours count: " + contours.Count);
+				moments.Add(Imgproc.moments (toneMat, true));
+				//if (WeightedCentroidEdge.Count == 0) {
+					moments.Add(Imgproc.moments (toneMat, true));
+				//	WeightedCentroidEdge.Add(new Point(0,0));
+				//}
+				WeightedCentroidEdge.Add(new Point((int)Math.Round(moments[moments.Count-1].m10 / moments[moments.Count-1].m00), (int)Math.Round(moments[moments.Count-1].m01 / moments[moments.Count-1].m00)));
+
+				Imgproc.ellipse (rgbMat, WeightedCentroidEdge [0], new Size (4, 4), 1, 1.5, 360, new Scalar (0,0,0,100), 10);
+				Imgproc.putText (rgbMat, " Edge center point", WeightedCentroidEdge [0], 0,1.3, new Scalar (0,0,0,100), 5);
+
+			}
+			//display
+
 			for(int i=0;i<=channelsMats.Count-2;i++){
 				switch (i) {
 				case 0:
@@ -445,30 +464,10 @@ namespace FrameProcessingChannels
 				}
 				Imgproc.ellipse (rgbMat, WeightedCentroid [i], new Size (4, 4), 1, 1.5, 360, colorScalar,10);
 				Imgproc.putText(rgbMat, colorName + " center " + WeightedCentroid [i], WeightedCentroid [i], 0, 1.3, colorScalar,5);	
-			Debug.Log ("center " + i + "is: " + WeightedCentroid[i]);
-		}
-			if (edge) {
-				Imgproc.Canny (toneMat, toneMat, thresholdValue * 0.5 , thresholdValue);
-				//Imgproc.findContours (channel, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE );
-				//	
-				//					foreach(MatOfPoint i in contours){
-				//						Debug.Log ("contour " + i + ": " + i.ToString());
-				//					}
-				//Debug.Log ("contours count: " + contours.Count);
-				moments.Add(Imgproc.moments (toneMat, true));
-				if (WeightedCentroid.Count == 0) {
-					moments.Add(Imgproc.moments (toneMat, true));
-					WeightedCentroid.Add(new Point(0,0));
-				}
-				WeightedCentroid.Add(new Point((int)Math.Round(moments[1].m10 / moments[1].m00), (int)Math.Round(moments[1].m01 / moments[1].m00)));
-
-				if (thresholdValue >= thresholdValueCap && edgeCenterPoint == true) {
-					Imgproc.ellipse (toneMat, WeightedCentroid [1], new Size (20, 20), 1, 0.1, 360, new Scalar (180), 10);
-					Imgproc.putText (toneMat, " Edge center point", WeightedCentroid [1], 0, 0.5, new Scalar (180), 5);
-				}
+			//	Debug.Log ("center " + i + "is: " + WeightedCentroid[i]);
 			}
-
 			WeightedCentroid.Clear ();
+			WeightedCentroidEdge.Clear ();
 			moments.Clear ();
 			contours.Clear ();
 			framesDropCount = 0;
