@@ -47,6 +47,7 @@
   <ItemGroup>
      <Compile Include="Assets\FPSdisplay.cs" />
      <Compile Include="Assets\FrameProcessing.cs" />
+     <Compile Include="Assets\FrameProcessingChannels.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv\DisposableObject.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv\DisposableOpenCVObject.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv\calib3d\Calib3d.cs" />

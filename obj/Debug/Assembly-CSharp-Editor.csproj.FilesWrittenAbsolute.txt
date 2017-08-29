@@ -24,3 +24,5 @@
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Unity.CecilTools.dll
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Mono.Cecil.Pdb.dll
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Mono.Cecil.Mdb.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Assembly-CSharp.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Assembly-CSharp.dll.mdb
