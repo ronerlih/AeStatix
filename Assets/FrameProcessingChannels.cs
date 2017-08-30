@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,14 +27,15 @@ namespace FrameProcessingChannels
 		bool inversion = true;
 
 		bool blur = true;
+		[Header("detection and calculation")]
 		[SerializeField]
-		[Range(1,20)]
-		int blurSize = 3;
+		[Range(1,40)]
+		int blurSize = 20;
 
 		bool toneThreshold = true;
 		[SerializeField]
 		[Range(0,255)]
-		double thresholdValue = 127.5f;
+		double idealThresholdValue = 127.5f;
 		int thresholdValueCap =2;
 
 		bool centerPoint = true;
@@ -41,19 +43,28 @@ namespace FrameProcessingChannels
 		List<Moments> moments = new List<Moments>();
 		List<Moments> momentsEdge = new List<Moments>();
 
+		public bool showRgbCenters = true;
 		[SerializeField]
-		bool edge = false;
-		[SerializeField]
+		bool edgeCenter = false;
 		bool edgeCenterPoint = false;
 
 		[SerializeField]
-		bool mergeCenters = false;
+		bool mergeRgbCenters = false;
+
+		public bool mergeEdge = false;
+		[Range(0.01f,0.99f)]
+		public float edgeFactor = 0.5f;
 
 		int edgeThresh = 1;
 		int lowThreshold;
 		int  max_lowThreshold = 100;
 		int ratio = 3;
 
+		[SerializeField]
+		bool calculateLocation = false;
+		[SerializeField]
+		[Range(0.51f,1f)]
+		float LocationSizeFactor = 0.8f;
 		Mat hierarchy;
 		List< MatOfPoint > contours = new List<MatOfPoint>(); 	
 
@@ -65,7 +76,11 @@ namespace FrameProcessingChannels
 		// GRAY IMG MAT
 		List<Mat> channelsMats = new List<Mat>();
 
-        public string requestedDeviceName = null;
+		/// <summary>
+		/// /////////////////////////////////performance fields
+		/// </summary>
+		string requestedDeviceName = null;
+		[Header("performance")]
 		[SerializeField]
 		bool resize = false;
 		//resize ratio
@@ -394,7 +409,7 @@ namespace FrameProcessingChannels
 				}
 				//
 				if (toneThreshold){
-					Imgproc.threshold ( channelsMats[i], channelsMats[i], thresholdValue, 255, Imgproc.THRESH_BINARY );
+					Imgproc.threshold ( channelsMats[i], channelsMats[i], idealThresholdValue, 255, Imgproc.THRESH_BINARY );
 				}
 			
 				if (blur) {
@@ -423,8 +438,8 @@ namespace FrameProcessingChannels
 				}					
 			}
 
-			if (edge) {
-				Imgproc.Canny( toneMat, toneMat, thresholdValue * 0.5 , thresholdValue);
+			if (edgeCenter) {
+				Imgproc.Canny( toneMat, toneMat, idealThresholdValue * 0.5 , idealThresholdValue);
 				//Imgproc.findContours (channel, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE );
 				//	
 				//					foreach(MatOfPoint i in contours){
@@ -442,30 +457,59 @@ namespace FrameProcessingChannels
 				Imgproc.putText (rgbMat, " edge center point", WeightedCentroidEdge [0], 0,1.3, new Scalar (0,0,0,100), 2);
 
 			}
-			//display
-
-			for(int i=0;i<=channelsMats.Count-2;i++){
-				switch (i) {
-				case 0:
-					colorName = " red";
-					colorScalar =new Scalar(255,0,0,100);
-					break;
-				case 1:
-					colorName = " green";
-					colorScalar =new Scalar(0,255,0,100);
-					break;
-				case 2:
-					colorName = " blue";
-					colorScalar = new Scalar(0,0,255,100);
-					break;
-				default:
-					colorName = "color";
-					break;
-				}
+			//display rgb centers
+			if(showRgbCenters){
+				for (int i = 0; i <= channelsMats.Count - 2; i++) {
+					switch (i) {
+					case 0:
+						colorName = " red";
+						colorScalar = new Scalar (255, 0, 0, 100);
+						break;
+					case 1:
+						colorName = " green";
+						colorScalar = new Scalar (0, 255, 0, 100);
+						break;
+					case 2:
+						colorName = " blue";
+						colorScalar = new Scalar (0, 0, 255, 100);
+						break;
+					default:
+						colorName = "color";
+						break;
+					}
+				
 				Imgproc.ellipse (rgbMat, WeightedCentroid [i], new Size (4, 4), 1, 1.5, 360, colorScalar,10);
 				Imgproc.putText(rgbMat, colorName + " center " + WeightedCentroid [i], WeightedCentroid [i], 0, 1.3, colorScalar,2);	
 			//	Debug.Log ("center " + i + "is: " + WeightedCentroid[i]);
+				}
 			}
+			if (mergeRgbCenters) {
+				Point rgbAverage = new Point {
+					x = (int)Math.Round (WeightedCentroid.Average (p => p.x)),
+					y = (int)Math.Round (WeightedCentroid.Average (p => p.y))
+				};
+				//Debug.Log ("average POINT: " + rgbAverage);
+				Imgproc.ellipse (rgbMat, rgbAverage, new Size (4, 4), 1, 1.5, 360, new Scalar(120,120,120,255),10);
+				Imgproc.putText(rgbMat, " merged center " + rgbAverage,rgbAverage, 0, 1.3, new Scalar(120,120,120,255),2);	
+
+				if (calculateLocation) {
+					Imgproc.rectangle (rgbMat, new Point (webCamTexture.width * LocationSizeFactor, webCamTexture.height * LocationSizeFactor),
+						new Point (webCamTexture.width * (1 - LocationSizeFactor), webCamTexture.height * (1 - LocationSizeFactor)), new Scalar (255, 0, 0, 255),2,8,0);
+
+
+
+			//		if(rgbAverage.x >= Screen.width * LocationSizeFactor
+				}
+				if (mergeEdge && WeightedCentroidEdge.Count >= 0) {
+					Point edgeAverage = new Point((( (1 - edgeFactor) * rgbAverage.x )+  ((edgeFactor) * WeightedCentroidEdge[0].x)),
+												 (( (1 - edgeFactor) * rgbAverage.y )+  ((edgeFactor) * WeightedCentroidEdge[0].y)));
+					Imgproc.ellipse (rgbMat, edgeAverage, new Size (4, 4), 1, 1.5, 360, new Scalar(244, 66, 226,255),10);
+					Imgproc.putText(rgbMat, " merged center " + edgeAverage,edgeAverage, 0, 1.3, new Scalar(244, 66, 226,255),2);	
+				}
+
+
+			}
+
 			WeightedCentroid.Clear ();
 			WeightedCentroidEdge.Clear ();
 			moments.Clear ();
