@@ -65,6 +65,9 @@ namespace FrameProcessingChannels
 		[SerializeField]
 		[Range(0.51f,1f)]
 		float LocationSizeFactor = 0.8f;
+		[SerializeField]
+		[Range(0.01f,0.99f)]
+		float locationWeightFactor = 1f;
 		Mat hierarchy;
 		List< MatOfPoint > contours = new List<MatOfPoint>(); 	
 
@@ -484,6 +487,9 @@ namespace FrameProcessingChannels
 				}
 			}
 			if (mergeRgbCenters) {
+				bool edgeInRect = false;
+				bool rgbInRect = false;
+
 				Point rgbAverage = new Point {
 					x = (int)Math.Round (WeightedCentroid.Average (p => p.x)),
 					y = (int)Math.Round (WeightedCentroid.Average (p => p.y))
@@ -494,20 +500,65 @@ namespace FrameProcessingChannels
 
 				if (calculateLocation) {
 					Imgproc.rectangle (rgbMat, new Point (webCamTexture.width * LocationSizeFactor, webCamTexture.height * LocationSizeFactor),
-						new Point (webCamTexture.width * (1 - LocationSizeFactor), webCamTexture.height * (1 - LocationSizeFactor)), new Scalar (255, 0, 0, 255),2,8,0);
+											   new Point (webCamTexture.width * (1 - LocationSizeFactor), webCamTexture.height * (1 - LocationSizeFactor)), new Scalar (255, 0, 0, 255),2,8,0);
 
 
+
+					//case edge center in center rect
+					if (WeightedCentroidEdge [0].x <= webCamTexture.width * LocationSizeFactor && WeightedCentroidEdge [0].x >= webCamTexture.width * (1 - LocationSizeFactor) &&
+						WeightedCentroidEdge [0].y <= webCamTexture.height * LocationSizeFactor && WeightedCentroidEdge [0].y >= webCamTexture.height * (1 - LocationSizeFactor)) {
+						edgeInRect = true;
+					}
+					//case RGB center in center rect
+					if (rgbAverage.x <= webCamTexture.width * LocationSizeFactor && rgbAverage.x >= webCamTexture.width * (1 - LocationSizeFactor) &&
+						rgbAverage.y <= webCamTexture.height * LocationSizeFactor && rgbAverage.y >= webCamTexture.height * (1 - LocationSizeFactor)) {
+						rgbInRect = true;
+					}
+					//case RGB center & edge is out
+					if (rgbInRect && !edgeInRect) {
+						edgeFactor -= locationWeightFactor;
+						if (edgeFactor <= 0) {
+							edgeFactor = 0;
+						}
+					}
+					//case edge center & RGB is out
+					if (!rgbInRect && edgeInRect) {
+						edgeFactor += locationWeightFactor;
+						if (edgeFactor >= 1 ) {
+							edgeFactor = 1;
+						}
+					}
+					//average with location factors
+					Point edgeAverage = new Point((( (1 - edgeFactor) * rgbAverage.x )+  ((edgeFactor) * WeightedCentroidEdge[0].x)),
+						(( (1 - edgeFactor) * rgbAverage.y )+  ((edgeFactor) * WeightedCentroidEdge[0].y)));
+					Imgproc.ellipse (rgbMat, edgeAverage, new Size (4, 4), 1, 1.5, 360, new Scalar(244, 66, 226,255),10);
+					Imgproc.putText(rgbMat, " merged center " + edgeAverage,edgeAverage, 0, 1.3, new Scalar(244, 66, 226,255),2);	
 
 			//		if(rgbAverage.x >= Screen.width * LocationSizeFactor
 				}
-				if (mergeEdge && WeightedCentroidEdge.Count >= 0) {
+				if (mergeEdge && WeightedCentroidEdge.Count >= 0 && !calculateLocation) {
 					Point edgeAverage = new Point((( (1 - edgeFactor) * rgbAverage.x )+  ((edgeFactor) * WeightedCentroidEdge[0].x)),
 												 (( (1 - edgeFactor) * rgbAverage.y )+  ((edgeFactor) * WeightedCentroidEdge[0].y)));
+
+					//average with edge factor
 					Imgproc.ellipse (rgbMat, edgeAverage, new Size (4, 4), 1, 1.5, 360, new Scalar(244, 66, 226,255),10);
 					Imgproc.putText(rgbMat, " merged center " + edgeAverage,edgeAverage, 0, 1.3, new Scalar(244, 66, 226,255),2);	
 				}
 
-
+				//case RGB center & edge is out  bring back value
+				if (rgbInRect && !edgeInRect) {
+					edgeFactor += locationWeightFactor;
+					if (edgeFactor <= 0) {
+						edgeFactor = 0;
+					}
+				}
+				//case edge center & RGB is out bring back value
+				if (!rgbInRect && edgeInRect) {
+					edgeFactor -= locationWeightFactor;
+					if (edgeFactor >= 1 ) {
+						edgeFactor = 1;
+					}
+				}
 			}
 
 			WeightedCentroid.Clear ();
