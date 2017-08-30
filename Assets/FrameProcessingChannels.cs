@@ -68,6 +68,16 @@ namespace FrameProcessingChannels
 		[SerializeField]
 		[Range(0.01f,0.99f)]
 		float locationWeightFactor = 1f;
+		[SerializeField]
+		bool showLocationRect = true;
+		[SerializeField]
+		bool popToCenter = false;
+		[SerializeField]
+		[Range(0.51f,1f)]
+		float popToCenterRectFactor = 0.55f;
+		[SerializeField]
+		bool showPopToCenterRect = true;
+
 		Mat hierarchy;
 		List< MatOfPoint > contours = new List<MatOfPoint>(); 	
 
@@ -499,11 +509,10 @@ namespace FrameProcessingChannels
 				Imgproc.putText(rgbMat, " merged center " + rgbAverage,rgbAverage, 0, 1.3, new Scalar(120,120,120,255),2);	
 
 				if (calculateLocation) {
-					Imgproc.rectangle (rgbMat, new Point (webCamTexture.width * LocationSizeFactor, webCamTexture.height * LocationSizeFactor),
-											   new Point (webCamTexture.width * (1 - LocationSizeFactor), webCamTexture.height * (1 - LocationSizeFactor)), new Scalar (255, 0, 0, 255),2,8,0);
-
-
-
+					if (showLocationRect) {
+						Imgproc.rectangle (rgbMat, new Point (webCamTexture.width * LocationSizeFactor, webCamTexture.height * LocationSizeFactor),
+							new Point (webCamTexture.width * (1 - LocationSizeFactor), webCamTexture.height * (1 - LocationSizeFactor)), new Scalar (255, 0, 0, 255), 2, 8, 0);
+					}
 					//case edge center in center rect
 					if (WeightedCentroidEdge [0].x <= webCamTexture.width * LocationSizeFactor && WeightedCentroidEdge [0].x >= webCamTexture.width * (1 - LocationSizeFactor) &&
 						WeightedCentroidEdge [0].y <= webCamTexture.height * LocationSizeFactor && WeightedCentroidEdge [0].y >= webCamTexture.height * (1 - LocationSizeFactor)) {
@@ -531,21 +540,37 @@ namespace FrameProcessingChannels
 					//average with location factors
 					Point edgeAverage = new Point((( (1 - edgeFactor) * rgbAverage.x )+  ((edgeFactor) * WeightedCentroidEdge[0].x)),
 						(( (1 - edgeFactor) * rgbAverage.y )+  ((edgeFactor) * WeightedCentroidEdge[0].y)));
+
+					if (popToCenter) {
+
+						//show pop rect
+						if (showPopToCenterRect) {
+							Imgproc.rectangle (rgbMat, new Point (webCamTexture.width * popToCenterRectFactor, webCamTexture.height * popToCenterRectFactor),
+								new Point (webCamTexture.width * (1 - popToCenterRectFactor), webCamTexture.height * (1 - popToCenterRectFactor)), new Scalar (0, 0, 255, 255), 2, 8, 0);
+						}
+						//case point inside rect
+						if (edgeAverage.x <= webCamTexture.width * popToCenterRectFactor && edgeAverage.x >= webCamTexture.width * (1 - popToCenterRectFactor) &&
+							edgeAverage.y <= webCamTexture.height * popToCenterRectFactor && edgeAverage.y >= webCamTexture.height * (1 - popToCenterRectFactor)) {
+							edgeAverage.x = (int)Math.Round (webCamTexture.width * 0.5);
+							edgeAverage.y = (int)Math.Round (webCamTexture.height * 0.5);
+						}
+
+					}
 					Imgproc.ellipse (rgbMat, edgeAverage, new Size (6,6), 1, 1.5, 360, new Scalar(244, 66, 226,255),13);
 					Imgproc.putText(rgbMat, " merged center " + edgeAverage,edgeAverage, 0, 1.3, new Scalar(244, 66, 226,255),2);	
 
 				}
+				//average with no location
 				if (mergeEdge && WeightedCentroidEdge.Count >= 0 && !calculateLocation) {
-					Point edgeAverage = new Point((( (1 - edgeFactor) * rgbAverage.x )+  ((edgeFactor) * WeightedCentroidEdge[0].x)),
-												 (( (1 - edgeFactor) * rgbAverage.y )+  ((edgeFactor) * WeightedCentroidEdge[0].y)));
+					Point edgeAverage = new Point ((((1 - edgeFactor) * rgbAverage.x) + ((edgeFactor) * WeightedCentroidEdge [0].x)),
+						                    (((1 - edgeFactor) * rgbAverage.y) + ((edgeFactor) * WeightedCentroidEdge [0].y)));
 
 					//average with edge factor
-					Imgproc.ellipse (rgbMat, edgeAverage, new Size (6, 6), 1, 1.5, 360, new Scalar(244, 66, 226,255),13);
-					Imgproc.putText(rgbMat, " merged center " + edgeAverage,edgeAverage, 0, 1.3, new Scalar(244, 66, 226,255),2);	
-				}
+					Imgproc.ellipse (rgbMat, edgeAverage, new Size (6, 6), 1, 1.5, 360, new Scalar (244, 66, 226, 255), 13);
+					Imgproc.putText (rgbMat, " merged center " + edgeAverage, edgeAverage, 0, 1.3, new Scalar (244, 66, 226, 255), 2);	
+				
 
-				if (popToCenter) {
-					
+
 				}
 				//#############DISPOSAL
 				//case RGB center & edge is out  bring back value
