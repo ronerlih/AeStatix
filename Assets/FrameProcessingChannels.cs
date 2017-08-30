@@ -439,7 +439,7 @@ namespace FrameProcessingChannels
 				WeightedCentroidEdge.Add(new Point((int)Math.Round(moments[moments.Count-1].m10 / moments[moments.Count-1].m00), (int)Math.Round(moments[moments.Count-1].m01 / moments[moments.Count-1].m00)));
 
 				Imgproc.ellipse (rgbMat, WeightedCentroidEdge [0], new Size (4, 4), 1, 1.5, 360, new Scalar (0,0,0,100), 10);
-				Imgproc.putText (rgbMat, " Edge center point", WeightedCentroidEdge [0], 0,1.3, new Scalar (0,0,0,100), 5);
+				Imgproc.putText (rgbMat, " edge center point", WeightedCentroidEdge [0], 0,1.3, new Scalar (0,0,0,100), 2);
 
 			}
 			//display
@@ -463,7 +463,7 @@ namespace FrameProcessingChannels
 					break;
 				}
 				Imgproc.ellipse (rgbMat, WeightedCentroid [i], new Size (4, 4), 1, 1.5, 360, colorScalar,10);
-				Imgproc.putText(rgbMat, colorName + " center " + WeightedCentroid [i], WeightedCentroid [i], 0, 1.3, colorScalar,5);	
+				Imgproc.putText(rgbMat, colorName + " center " + WeightedCentroid [i], WeightedCentroid [i], 0, 1.3, colorScalar,2);	
 			//	Debug.Log ("center " + i + "is: " + WeightedCentroid[i]);
 			}
 			WeightedCentroid.Clear ();
