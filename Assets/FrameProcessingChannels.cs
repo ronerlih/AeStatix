@@ -531,20 +531,23 @@ namespace FrameProcessingChannels
 					//average with location factors
 					Point edgeAverage = new Point((( (1 - edgeFactor) * rgbAverage.x )+  ((edgeFactor) * WeightedCentroidEdge[0].x)),
 						(( (1 - edgeFactor) * rgbAverage.y )+  ((edgeFactor) * WeightedCentroidEdge[0].y)));
-					Imgproc.ellipse (rgbMat, edgeAverage, new Size (4, 4), 1, 1.5, 360, new Scalar(244, 66, 226,255),10);
+					Imgproc.ellipse (rgbMat, edgeAverage, new Size (6,6), 1, 1.5, 360, new Scalar(244, 66, 226,255),13);
 					Imgproc.putText(rgbMat, " merged center " + edgeAverage,edgeAverage, 0, 1.3, new Scalar(244, 66, 226,255),2);	
 
-			//		if(rgbAverage.x >= Screen.width * LocationSizeFactor
 				}
 				if (mergeEdge && WeightedCentroidEdge.Count >= 0 && !calculateLocation) {
 					Point edgeAverage = new Point((( (1 - edgeFactor) * rgbAverage.x )+  ((edgeFactor) * WeightedCentroidEdge[0].x)),
 												 (( (1 - edgeFactor) * rgbAverage.y )+  ((edgeFactor) * WeightedCentroidEdge[0].y)));
 
 					//average with edge factor
-					Imgproc.ellipse (rgbMat, edgeAverage, new Size (4, 4), 1, 1.5, 360, new Scalar(244, 66, 226,255),10);
+					Imgproc.ellipse (rgbMat, edgeAverage, new Size (6, 6), 1, 1.5, 360, new Scalar(244, 66, 226,255),13);
 					Imgproc.putText(rgbMat, " merged center " + edgeAverage,edgeAverage, 0, 1.3, new Scalar(244, 66, 226,255),2);	
 				}
 
+				if (popToCenter) {
+					
+				}
+				//#############DISPOSAL
 				//case RGB center & edge is out  bring back value
 				if (rgbInRect && !edgeInRect) {
 					edgeFactor += locationWeightFactor;
