@@ -48,6 +48,7 @@
      <Compile Include="Assets\FPSDisplay.cs" />
      <Compile Include="Assets\FrameProcessing.cs" />
      <Compile Include="Assets\FrameProcessingChannels.cs" />
+     <Compile Include="Assets\ImageManager.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv\DisposableObject.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv\DisposableOpenCVObject.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv\calib3d\Calib3d.cs" />
@@ -265,6 +266,7 @@
      <Compile Include="Assets\OpenCVForUnity\org\opencv_contrib\xphoto\SimpleWB.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv_contrib\xphoto\WhiteBalancer.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv_contrib\xphoto\Xphoto.cs" />
+     <Compile Include="Assets\Singelton.cs" />
      <None Include="Assets\StreamingAssets\haarcascade_frontalface_alt.xml" />
      <None Include="Assets\OpenCVForUnity\OpenCV_LICENSE.txt" />
      <None Include="Assets\StreamingAssets\lbpcascade_frontalface.xml" />

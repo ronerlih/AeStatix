@@ -596,6 +596,18 @@ namespace FrameProcessingChannels
 			framesDropCount = 0;
 		}
 
+		public void takePhoto(){
+			Debug.Log ("TAKE PHOTO");
+			Texture2D tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false, true);
+			Mat textureInstance = new Mat (Screen.height, Screen.width, CvType.CV_8UC4);
+			Imgproc.resize(rgbMat, textureInstance, new Size(Screen.width,Screen.height));
+			Debug.Log ("texture is" + textureInstance.width() + ", " + textureInstance.height());
+			Debug.Log ("tex is" + tex.width + ", " + tex.height);
+			Utils.fastMatToTexture2D (textureInstance, tex);
+
+			ImageManager.instance.photo = tex;
+		}
+
         /// <summary>
         /// Raises the destroy event.
         /// </summary>

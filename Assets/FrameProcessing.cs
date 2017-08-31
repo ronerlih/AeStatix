@@ -448,6 +448,7 @@ namespace FrameProcessing
 			framesDropCount = 0;
 
 		}
+	
 		/// <summary>
 		/// Raises the destroy event.
 		/// </summary>
