@@ -25,11 +25,10 @@ namespace FrameProcessingChannels
 		bool showProcessing = true;
 
 		bool inversion = true;
-
 		bool blur = true;
 		[Header("detection and calculation")]
 		[SerializeField]
-		[Range(1,40)]
+		[Range(0,40)]
 		int blurSize = 20;
 
 		bool toneThreshold = true;
@@ -617,6 +616,7 @@ namespace FrameProcessingChannels
 			moments.Clear ();
 			contours.Clear ();
 			framesDropCount = 0;
+			channelsMats.Clear ();
 		}
 
 		public void takePhoto(){
