@@ -80,6 +80,9 @@ namespace FrameProcessingChannels
 
 		Mat hierarchy;
 		List< MatOfPoint > contours = new List<MatOfPoint>(); 	
+		//take photo mat
+		Mat textureInstance;
+		bool stopForPhoto = false;
 
 		List<Point> WeightedCentroid = new List<Point>();
 		List<Point> WeightedCentroidEdge = new List<Point>();
@@ -159,6 +162,9 @@ namespace FrameProcessingChannels
         /// </summary>
 		Texture2D texture;
 		Texture2D textureGray;
+		Texture2D texturePhoto;
+		int snapshotCount;
+
 
         /// <summary>
         /// Indicates whether this instance is waiting for initialization to complete.
@@ -348,14 +354,19 @@ namespace FrameProcessingChannels
                 colors = new Color32[webCamTexture.width * webCamTexture.height];
 			if (texture == null || texture.width != webCamTexture.width || texture.height != webCamTexture.height)
 				texture = new Texture2D (webCamTexture.width, webCamTexture.height, TextureFormat.RGBA32, false);
+			texturePhoto = new Texture2D (Screen.width, Screen.height, TextureFormat.RGBA32, false);
 			if (textureGray == null || textureGray.width != webCamTexture.width || textureGray.height != webCamTexture.height)
 				textureGray = new Texture2D (webCamTexture.width, webCamTexture.height, TextureFormat.Alpha8, false);
+			
 
-
-			// reference mat
+			//reference mat
 			cloneMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
+			//analyzed Mat
 			rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
+			//single channel mat
 			toneMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
+			//teke photo mat
+			textureInstance = new Mat (Screen.height, Screen.width, CvType.CV_8UC4);
 
 
 
@@ -366,8 +377,10 @@ namespace FrameProcessingChannels
 			//inversionMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1, new Scalar(255));
 
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
-            gameObject.transform.localScale = new Vector3 (webCamTexture.width, webCamTexture.height, 1);
-            Debug.Log ("Screen.width " + Screen.width + " Screen.height " + Screen.height + " Screen.orientation " + Screen.orientation);
+
+			gameObject.transform.localScale = new Vector3 (webCamTexture.width, webCamTexture.height, 1);
+
+			Debug.Log ("Screen.width " + Screen.width + " Screen.height " + Screen.height + " Screen.orientation " + Screen.orientation);
 
 
             float width = rgbMat.width ();
@@ -389,9 +402,10 @@ namespace FrameProcessingChannels
 			framesDropCount++;
 
             if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame) {
-				Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
-				Utils.webCamTextureToMat (webCamTexture, toneMat);
-
+				if (!stopForPhoto) {
+					Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+					Utils.webCamTextureToMat (webCamTexture, toneMat);
+				}
 				//Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " SO:" + Screen.orientation, new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
 				//Debug.Log ("webcam ratio " + "( " + webCamTexture.width + ", " + webCamTexture.height + ")");
 
@@ -400,7 +414,12 @@ namespace FrameProcessingChannels
 				}
 
 				Imgproc.putText (rgbMat, "W:" + rgbMat.width () + " H:" + rgbMat.height (), new Point ((int)Math.Round(rgbMat.width() * 0.35), rgbMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255,0,0,0.5), 2, Imgproc.LINE_AA, false);
-				Utils.matToTexture2D (rgbMat, texture);
+				if (!stopForPhoto) {
+					Utils.matToTexture2D (rgbMat, texture);
+				} else {
+					Utils.matToTexture2D (toneMat, texture);
+				}				//display
+				//Utils.matToTexture2D (textureInstance, texturePhoto);
 				//Utils.matToTexture2D (toneMat, textureGray);
 
             }
@@ -597,15 +616,37 @@ namespace FrameProcessingChannels
 		}
 
 		public void takePhoto(){
+			snapshotCount = 20;
 			Debug.Log ("TAKE PHOTO");
 			Texture2D tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false, true);
-			Mat textureInstance = new Mat (Screen.height, Screen.width, CvType.CV_8UC4);
+
+			InvokeRepeating("pauseForPhoto", 0.001f, 0.001f);
+
 			Imgproc.resize(rgbMat, textureInstance, new Size(Screen.width,Screen.height));
 			Debug.Log ("texture is" + textureInstance.width() + ", " + textureInstance.height());
 			Debug.Log ("tex is" + tex.width + ", " + tex.height);
 			Utils.fastMatToTexture2D (textureInstance, tex);
 
+			//write to singleton
 			ImageManager.instance.photo = tex;
+
+			//write image
+			Imgcodecs.imwrite ("Assets/snapshot.jpeg", textureInstance);
+		}
+		public void pauseForPhoto(){
+
+			if (snapshotCount <= 0) {
+				CancelInvoke ();
+				stopForPhoto = false;
+
+			} else {
+				
+				Utils.matToTexture2D (textureInstance, texturePhoto);
+
+				snapshotCount--;
+				Debug.Log ("snapshotCount: " + snapshotCount);
+				stopForPhoto = true;
+			}
 		}
 
         /// <summary>
