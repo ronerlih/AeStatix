@@ -83,6 +83,7 @@ namespace FrameProcessingChannels
 		//take photo mat
 		Mat textureInstance;
 		bool stopForPhoto = false;
+		bool drawFlag = false;
 
 		List<Point> WeightedCentroid = new List<Point>();
 		List<Point> WeightedCentroidEdge = new List<Point>();
@@ -417,7 +418,10 @@ namespace FrameProcessingChannels
 				if (!stopForPhoto) {
 					Utils.matToTexture2D (rgbMat, texture);
 				} else {
-					Utils.matToTexture2D (toneMat, texture);
+					if (drawFlag) {
+						Utils.matToTexture2D (toneMat, texture);
+						drawFlag = false;
+					}
 				}				//display
 				//Utils.matToTexture2D (textureInstance, texturePhoto);
 				//Utils.matToTexture2D (toneMat, textureGray);
@@ -616,10 +620,10 @@ namespace FrameProcessingChannels
 		}
 
 		public void takePhoto(){
-			snapshotCount = 20;
+			snapshotCount = 40;
 			Debug.Log ("TAKE PHOTO");
 			Texture2D tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false, true);
-
+			drawFlag = true;
 			InvokeRepeating("pauseForPhoto", 0.001f, 0.001f);
 
 			Imgproc.resize(rgbMat, textureInstance, new Size(Screen.width,Screen.height));
@@ -633,6 +637,7 @@ namespace FrameProcessingChannels
 			//write image
 			Imgcodecs.imwrite ("Assets/snapshot.jpeg", textureInstance);
 		}
+
 		public void pauseForPhoto(){
 
 			if (snapshotCount <= 0) {
@@ -641,8 +646,6 @@ namespace FrameProcessingChannels
 
 			} else {
 				
-				Utils.matToTexture2D (textureInstance, texturePhoto);
-
 				snapshotCount--;
 				Debug.Log ("snapshotCount: " + snapshotCount);
 				stopForPhoto = true;
