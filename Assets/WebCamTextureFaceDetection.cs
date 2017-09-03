@@ -55,6 +55,17 @@ namespace OpenCVForUnityExample
 		int colRangeleft; 
 		int colRangeRight; 
 
+		//last frame range
+		int? rowRangeTopLast;
+		int? rowRangeButtomLast;
+		int? colRangeleftLast;
+		int? colRangeRightLast;
+
+		int rowRangeTopResult;
+		int rowRangeButtomResult;
+		int colRangeleftResult;
+		int colRangeRightResult;
+
 		//fframe skip
 		int noFaceFrameCount = 0;
 		[SerializeField]
@@ -66,6 +77,23 @@ namespace OpenCVForUnityExample
 		int hightCorrection = 50;
 		[SerializeField]
 		bool showRect = true;
+		[SerializeField]
+		bool stabilizeRect = false;
+		//[SerializeField]
+		//[Range(0.001f,0.999f)]
+		float stabilizeFactor = 0.5f;
+		[SerializeField]
+		bool colorBlur = false;
+		[SerializeField]
+		[Range(0,100)]
+		int redBlur = 50;
+		[SerializeField]
+		[Range(0,100)]
+		int greenBlur = 50;
+		[SerializeField]
+		[Range(0,100)]
+		int blueBlur = 50;
+	
 
 		#if UNITY_WEBGL && !UNITY_EDITOR
 		Stack<IEnumerator> coroutines = new Stack<IEnumerator> ();
@@ -179,11 +207,17 @@ namespace OpenCVForUnityExample
 
 				if (rects.Length == 0  ) {
 					noFaceFrameCount++;
-					if ( rectsLast!=null && noFaceFrameCount <= maxNegativeFrames && rectsLast.Length > 0) {
+					if (rectsLast != null && noFaceFrameCount <= maxNegativeFrames && rectsLast.Length > 0) {
 						blurBackground (rectsLast, rgbaMat);
+					} else {
+					//clear last rect fields
+						rowRangeTopLast = null;
+						rowRangeButtomLast = null;
+						colRangeleftLast = null;
+						colRangeRightLast = null;
 					}
 				}
-				if (rects.Length > 0) {
+				if (rects != null && rects.Length > 0) {
 
 					blurBackground (rects, rgbaMat);
 
@@ -206,7 +240,9 @@ namespace OpenCVForUnityExample
 
 		public void blurBackground(OpenCVForUnity.Rect[] _rects, Mat _mat ){
 			Imgproc.blur (_mat, _mat, new Size (blurPixelSize, blurPixelSize));
-
+			if (colorBlur) {
+				Core.add (_mat, new Scalar (redBlur, greenBlur, blueBlur), _mat);
+			}
 			//rect and blur background
 			for (int i = 0; i < _rects.Length; i++) {
 				//              Debug.Log ("detect faces " + rects [i]);
@@ -236,14 +272,43 @@ namespace OpenCVForUnityExample
 					colRangeRight = rectFactor + _rects [i].x + _rects [i].width;
 				}
 
-				copyMat.rowRange(rowRangeTop ,rowRangeButtom)
-					.colRange( colRangeleft,  colRangeRight)
+				if (stabilizeRect) {
+					if (rowRangeTopLast != null) {
+						rowRangeTopResult = (int)Math.Round((1 - stabilizeFactor) * rowRangeTop +  stabilizeFactor * (int)rowRangeTopLast);
+						rowRangeButtomResult = (int)Math.Round((1 - stabilizeFactor) * rowRangeButtom + stabilizeFactor * (int)rowRangeButtomLast); 
+						colRangeleftResult = (int)Math.Round((1 - stabilizeFactor) * colRangeleft + stabilizeFactor * (int)colRangeleftLast);
+						colRangeRightResult = (int)Math.Round((1 - stabilizeFactor) * colRangeRight + stabilizeFactor * (int)colRangeRightLast); 
+					}else{
+						rowRangeTopResult = rowRangeTop;
+						rowRangeButtomResult = rowRangeButtom;
+						colRangeleftResult = colRangeleft;
+						colRangeRightResult = colRangeRight;
+					}
+				} else {
+					rowRangeTopResult = rowRangeTop;
+					rowRangeButtomResult = rowRangeButtom;
+					colRangeleftResult = colRangeleft;
+					colRangeRightResult = colRangeRight;
+				}
+
+
+
+				rowRangeTopLast = rowRangeTop;
+				rowRangeButtomLast = rowRangeButtom;
+				colRangeleftLast = colRangeleft;
+				colRangeRightLast = colRangeRight;
+
+				//save values for stabilaztion
+
+
+				copyMat.rowRange(rowRangeTopResult ,rowRangeButtomResult)
+					.colRange( colRangeleftResult,  colRangeRightResult)
 					.copyTo(_mat
-						.rowRange(rowRangeTop , rowRangeButtom)
-						.colRange(colRangeleft, colRangeRight));
+						.rowRange(rowRangeTopResult , rowRangeButtomResult)
+						.colRange(colRangeleftResult, colRangeRightResult));
 				//Imgcodecs.imwrite ("Assets/face.jpeg", copyMat);
 				if (showRect) {
-					Imgproc.rectangle (_mat, new Point (colRangeleft, rowRangeTop ), new Point (colRangeRight, rowRangeButtom), new Scalar (100, 100, 250, 35), 2);
+					Imgproc.rectangle (_mat, new Point (colRangeleftResult, rowRangeTopResult ), new Point (colRangeRightResult, rowRangeButtomResult), new Scalar (100, 100, 250, 35), 2);
 				}
 			}
 		}
