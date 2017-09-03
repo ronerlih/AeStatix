@@ -16,8 +16,11 @@ namespace OpenCVForUnityExample
 	/// http://docs.opencv.org/3.2.0/db/d28/tutorial_cascade_classifier.html
 	/// </summary>
 	[RequireComponent(typeof(WebCamTextureToMatHelper))]
-	public class WebCamTextureFaceDetectionExample : MonoBehaviour
+	public class WebCamTextureFaceDetection : MonoBehaviour
 	{
+		[SerializeField]
+		[Range(10,200)]
+		int blurPixelSize = 100;
 		[SerializeField]
 		[Range(0,300)]
 		int rectFactor = 100;
@@ -181,13 +184,15 @@ namespace OpenCVForUnityExample
 					}
 				}
 				if (rects.Length > 0) {
+
+					blurBackground (rects, rgbaMat);
+
 					noFaceFrameCount = 0;
 					rectsLast = null;
 					rectsLast = new OpenCVForUnity.Rect[rects.Length];
 					for (int i = 0; i < rects.Length; i++) {
 						rectsLast[i] = rects[i];
 					}
-					blurBackground (rects, rgbaMat);
 
 				}
 
@@ -200,7 +205,7 @@ namespace OpenCVForUnityExample
 		}
 
 		public void blurBackground(OpenCVForUnity.Rect[] _rects, Mat _mat ){
-			Imgproc.blur (_mat, _mat, new Size (100, 100));
+			Imgproc.blur (_mat, _mat, new Size (blurPixelSize, blurPixelSize));
 
 			//rect and blur background
 			for (int i = 0; i < _rects.Length; i++) {
