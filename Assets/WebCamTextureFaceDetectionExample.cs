@@ -46,6 +46,24 @@ namespace OpenCVForUnityExample
 		/// </summary>
 		WebCamTextureToMatHelper webCamTextureToMatHelper;
 
+		//frame range
+		int rowRangeTop; 
+		int rowRangeButtom; 
+		int colRangeleft; 
+		int colRangeRight; 
+
+		//fframe skip
+		int noFaceFrameCount = 0;
+		[SerializeField]
+		[Range(0,20)]
+		int maxNegativeFrames = 5;
+		OpenCVForUnity.Rect[] rectsLast;
+		[SerializeField]
+		[Range(0,200)]
+		int hightCorrection = 50;
+		[SerializeField]
+		bool showRect = true;
+
 		#if UNITY_WEBGL && !UNITY_EDITOR
 		Stack<IEnumerator> coroutines = new Stack<IEnumerator> ();
 		#endif
@@ -148,55 +166,32 @@ namespace OpenCVForUnityExample
 
 
 				if (cascade != null)
-					cascade.detectMultiScale (grayMat, faces, 1.1, 2, 2, // TODO: objdetect.CV_HAAR_SCALE_IMAGE
-						new Size (grayMat.cols () * 0.2, grayMat.rows () * 0.2), new Size ());
-
+					cascade.detectMultiScale (grayMat,
+											  faces, 
+											  1.1, 2, 2, 
+											  new Size (grayMat.cols () * 0.2, grayMat.rows () * 0.2), 
+											  new Size ());
 
 				OpenCVForUnity.Rect[] rects = faces.toArray ();
-				for (int i = 0; i < rects.Length; i++) {
-					//              Debug.Log ("detect faces " + rects [i]);
 
-					Mat faceMat = new Mat (rects [i].x + rects [i].width, rects [i].height, CvType.CV_8UC4);
-						
-					Imgproc.blur( rgbaMat,rgbaMat, new Size(60,60) );
-					//copyMat.copyTo(rgbaMat.submat(rects [i].x, rects [i].y, rects [i].x + rects [i].width, rects [i].y + rects [i].height));
-				
-					int rowRangeTop; 
-					int rowRangeButtom; 
-					int colRangeleft; 
-					int colRangeRight; 
-
-					if (-rectFactor + rects [i].y <= 0) {
-						rowRangeTop = 0;
-					} else {
-						rowRangeTop = -rectFactor + rects [i].y;
+				if (rects.Length == 0  ) {
+					noFaceFrameCount++;
+					if ( rectsLast!=null && noFaceFrameCount <= maxNegativeFrames && rectsLast.Length > 0) {
+						blurBackground (rectsLast, rgbaMat);
 					}
-					if (rectFactor + rects [i].y + rects [i].height >= copyMat.height()) {
-						rowRangeButtom = copyMat.height();
-					} else {
-						rowRangeButtom = rectFactor + rects [i].y + rects [i].height;
+				}
+				if (rects.Length > 0) {
+					noFaceFrameCount = 0;
+					rectsLast = null;
+					rectsLast = new OpenCVForUnity.Rect[rects.Length];
+					for (int i = 0; i < rects.Length; i++) {
+						rectsLast[i] = rects[i];
 					}
-					if (-rectFactor + rects [i].x <= 0) {
-						colRangeleft = 0;
-					} else {
-						colRangeleft = -rectFactor + rects [i].x;
-					}
-					if (rectFactor + rects [i].x + rects [i].width >= copyMat.width()) {
-						colRangeRight = copyMat.width();
-					} else {
-						colRangeRight = rectFactor + rects [i].x + rects [i].width;
-					}
-					
-					copyMat.rowRange(rowRangeTop ,rowRangeButtom)
-						.colRange( colRangeleft,  colRangeRight)
-						   .copyTo(rgbaMat
-							.rowRange(rowRangeTop, rowRangeButtom)
-							.colRange(colRangeleft, colRangeRight));
-					//Imgcodecs.imwrite ("Assets/face.jpeg", copyMat);
-					Imgproc.rectangle (rgbaMat, new Point (colRangeleft, rowRangeTop), new Point (colRangeRight, rowRangeButtom), new Scalar (20, 20, 200, 255), 2);
+					blurBackground (rects, rgbaMat);
 
 				}
 
+			
 
 				//              Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " SO:" + Screen.orientation, new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
 
@@ -204,6 +199,51 @@ namespace OpenCVForUnityExample
 			}
 		}
 
+		public void blurBackground(OpenCVForUnity.Rect[] _rects, Mat _mat ){
+			Imgproc.blur (_mat, _mat, new Size (100, 100));
+
+			//rect and blur background
+			for (int i = 0; i < _rects.Length; i++) {
+				//              Debug.Log ("detect faces " + rects [i]);
+
+
+				//copyMat.copyTo(rgbaMat.submat(rects [i].x, rects [i].y, rects [i].x + rects [i].width, rects [i].y + rects [i].height));
+
+				// Check mat range
+				if (-rectFactor + _rects [i].y - hightCorrection <= 0) {
+					rowRangeTop = 0;
+				} else {
+					rowRangeTop = -rectFactor + _rects [i].y - hightCorrection;
+				}
+				if (rectFactor + _rects [i].y + _rects [i].height >= copyMat.height()) {
+					rowRangeButtom = copyMat.height();
+				} else {
+					rowRangeButtom = rectFactor + _rects [i].y + _rects [i].height;
+				}
+				if (-rectFactor + _rects [i].x <= 0) {
+					colRangeleft = 0;
+				} else {
+					colRangeleft = -rectFactor + _rects [i].x;
+				}
+				if (rectFactor + _rects [i].x + _rects [i].width >= copyMat.width()) {
+					colRangeRight = copyMat.width();
+				} else {
+					colRangeRight = rectFactor + _rects [i].x + _rects [i].width;
+				}
+
+				copyMat.rowRange(rowRangeTop ,rowRangeButtom)
+					.colRange( colRangeleft,  colRangeRight)
+					.copyTo(_mat
+						.rowRange(rowRangeTop , rowRangeButtom)
+						.colRange(colRangeleft, colRangeRight));
+				//Imgcodecs.imwrite ("Assets/face.jpeg", copyMat);
+				if (showRect) {
+					Imgproc.rectangle (_mat, new Point (colRangeleft, rowRangeTop ), new Point (colRangeRight, rowRangeButtom), new Scalar (100, 100, 250, 35), 2);
+				}
+			}
+		}
+		void CheckMatBorder(){
+		}
 		/// <summary>
 		/// Raises the destroy event.
 		/// </summary>
