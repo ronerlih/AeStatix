@@ -533,7 +533,7 @@ namespace FrameProcessingChannels
 				if (calculateLocation) {
 					if (showLocationRect) {
 						Imgproc.rectangle (rgbMat, new Point (webCamTexture.width * LocationSizeFactor, webCamTexture.height * LocationSizeFactor),
-							new Point (webCamTexture.width * (1 - LocationSizeFactor), webCamTexture.height * (1 - LocationSizeFactor)), new Scalar (255, 0, 0, 255), 2, 8, 0);
+							new Point (webCamTexture.width * (1 - LocationSizeFactor), webCamTexture.height * (1 - LocationSizeFactor)), new Scalar (255, 50, 50, 155), 2, 8, 0);
 					}
 					//case edge center in center rect
 					if (WeightedCentroidEdge [0].x <= webCamTexture.width * LocationSizeFactor && WeightedCentroidEdge [0].x >= webCamTexture.width * (1 - LocationSizeFactor) &&
@@ -568,7 +568,7 @@ namespace FrameProcessingChannels
 						//show pop rect
 						if (showPopToCenterRect) {
 							Imgproc.rectangle (rgbMat, new Point (webCamTexture.width * popToCenterRectFactor, webCamTexture.height * popToCenterRectFactor),
-								new Point (webCamTexture.width * (1 - popToCenterRectFactor), webCamTexture.height * (1 - popToCenterRectFactor)), new Scalar (0, 0, 255, 255), 2, 8, 0);
+								new Point (webCamTexture.width * (1 - popToCenterRectFactor), webCamTexture.height * (1 - popToCenterRectFactor)), new Scalar (50, 50, 180, 100), 2, 8, 0);
 						}
 						//case point inside rect
 						if (edgeAverage.x <= webCamTexture.width * popToCenterRectFactor && edgeAverage.x >= webCamTexture.width * (1 - popToCenterRectFactor) &&

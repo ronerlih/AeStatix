@@ -78,7 +78,7 @@ namespace OpenCVForUnityExample
 		[SerializeField]
 		bool showRect = true;
 		[SerializeField]
-		bool stabilizeRect = false;
+		bool stabilizeRectBtwFrames = false;
 		//[SerializeField]
 		//[Range(0.001f,0.999f)]
 		float stabilizeFactor = 0.5f;
@@ -272,7 +272,7 @@ namespace OpenCVForUnityExample
 					colRangeRight = rectFactor + _rects [i].x + _rects [i].width;
 				}
 
-				if (stabilizeRect) {
+				if (stabilizeRectBtwFrames) {
 					if (rowRangeTopLast != null) {
 						rowRangeTopResult = (int)Math.Round((1 - stabilizeFactor) * rowRangeTop +  stabilizeFactor * (int)rowRangeTopLast);
 						rowRangeButtomResult = (int)Math.Round((1 - stabilizeFactor) * rowRangeButtom + stabilizeFactor * (int)rowRangeButtomLast); 
@@ -319,7 +319,7 @@ namespace OpenCVForUnityExample
 		/// </summary>
 		void OnDestroy ()
 		{
-			webCamTextureToMatHelper.Dispose ();
+			//webCamTextureToMatHelper.Dispose ();
 
 			if (cascade != null)
 				cascade.Dispose ();
