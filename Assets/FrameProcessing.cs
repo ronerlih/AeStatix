@@ -44,8 +44,6 @@ namespace FrameProcessing
 		double thresholdValue = 127.5f;
 		int thresholdValueCap =2;
 
-		[SerializeField]
-		bool blobs = false;
 
 		[SerializeField]
 		bool centerPoint = false;
@@ -57,7 +55,11 @@ namespace FrameProcessing
 		[SerializeField]
 		bool edgeCenterPoint = false;
 
+		[Space(20)]
 		[SerializeField]
+		bool blobs = false;
+
+		//[SerializeField]
 		bool mergeCenters = false;
 
 		int edgeThresh = 1;
