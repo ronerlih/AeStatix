@@ -48,7 +48,7 @@ namespace OpenCVForUnityExample
 		/// The webcam texture to mat helper.
 		/// </summary>
 		WebCamTextureToMatHelper webCamTextureToMatHelper;
-
+	
 		//frame range
 		int rowRangeTop; 
 		int rowRangeButtom; 
@@ -94,7 +94,6 @@ namespace OpenCVForUnityExample
 		[Range(0,100)]
 		int blueBlur = 50;
 	
-
 		#if UNITY_WEBGL && !UNITY_EDITOR
 		Stack<IEnumerator> coroutines = new Stack<IEnumerator> ();
 		#endif

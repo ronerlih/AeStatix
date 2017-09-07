@@ -380,9 +380,7 @@ namespace FrameProcessing
 				//Utils.matToTexture2D (toneMat, textureGray);
 
 			}
-
-
-
+				
 		}
 		public void processFrame(){
 			if (inversion) {
