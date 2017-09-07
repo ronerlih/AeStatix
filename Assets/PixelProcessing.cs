@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 #if UNITY_5_3 || UNITY_5_3_OR_NEWER
 using UnityEngine.SceneManagement;
@@ -15,6 +16,17 @@ namespace OpenCVForUnityExample
 	/// </summary>
 	public class PixelProcessing : MonoBehaviour
 	{
+
+		//frame processing
+		int frameCount = 0;
+		[SerializeField]
+//		[Range(1,100)]
+//		int skipFrames = 1;
+		[Range(0.016f,5f)]
+		float secondsBtwProcessing = 0.5f;
+	
+		/////////////////////////////////
+
 		/// <summary>
 		/// Set this to specify the name of the device to use.
 		/// </summary>
@@ -45,10 +57,18 @@ namespace OpenCVForUnityExample
 		/// </summary>
 		WebCamDevice webCamDevice;
 
+		// MATS:
+
 		/// <summary>
 		/// The rgba mat.
 		/// </summary>
 		Mat rgbaMat;
+
+		/// The rgb mat.
+		Mat rgbMat;
+
+		//channels List
+		List<Mat> channels = new List<Mat>();
 
 		/// <summary>
 		/// The colors.
@@ -192,6 +212,10 @@ namespace OpenCVForUnityExample
 				rgbaMat.Dispose ();
 				rgbaMat = null;
 			}
+			if (rgbMat != null) {
+				rgbMat.Dispose ();
+				rgbMat = null;
+			}
 		}
 
 		/// <summary>
@@ -205,6 +229,7 @@ namespace OpenCVForUnityExample
 				texture = new Texture2D (webCamTexture.width, webCamTexture.height, TextureFormat.RGBA32, false);
 
 			rgbaMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
+			rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
 
@@ -222,6 +247,9 @@ namespace OpenCVForUnityExample
 			} else {
 				Camera.main.orthographicSize = height / 2;
 			}
+
+			//start processing
+			StartCoroutine(processFrame());
 		}
 
 		// Update is called once per frame
@@ -229,13 +257,31 @@ namespace OpenCVForUnityExample
 		{
 			if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame) {
 				Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
+				Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+
 
 				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " SO:" + Screen.orientation, new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
 
 				Utils.matToTexture2D (rgbaMat, texture, colors);
+
+				frameCount++;
 			}
 		}
 
+		private IEnumerator processFrame(){
+			while (true) {
+				//split channels
+				if (rgbMat != null) {
+					Core.split (rgbMat, channels);
+					for (int i = 0; i < channels.Count; i++) {
+						Debug.Log ("channel " + i + "is: " + channels [i]);
+					}
+					//getCenterPointFromMat ();
+				}
+				Debug.Log ("end of a-sync loop");
+				yield return new WaitForSeconds(secondsBtwProcessing);
+			}
+		}
 		/// <summary>
 		/// Raises the destroy event.
 		/// </summary>
