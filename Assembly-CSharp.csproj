@@ -266,6 +266,7 @@
      <Compile Include="Assets\OpenCVForUnity\org\opencv_contrib\xphoto\SimpleWB.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv_contrib\xphoto\WhiteBalancer.cs" />
      <Compile Include="Assets\OpenCVForUnity\org\opencv_contrib\xphoto\Xphoto.cs" />
+     <Compile Include="Assets\PixelProcessing.cs" />
      <Compile Include="Assets\Singelton.cs" />
      <Compile Include="Assets\WebCamTextureFaceDetection.cs" />
      <Compile Include="Assets\WebCamTextureToMatHelper.cs" />

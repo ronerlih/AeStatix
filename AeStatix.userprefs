@@ -5,10 +5,10 @@
       <File FileName="Assets/FrameProcessingChannels.cs" Line="1" Column="1" />
       <File FileName="Assets/FPSDisplay.cs" Line="1" Column="1" />
       <File FileName="Assets/OpenCVForUnity/org/opencv/unity/Utils.cs" Line="1" Column="1" />
-      <File FileName="Assets/FrameProcessing.cs" Line="388" Column="17" />
+      <File FileName="Assets/FrameProcessing.cs" Line="246" Column="4" />
       <File FileName="Assets/ImageManager.cs" Line="1" Column="1" />
-      <File FileName="Assets/WebCamTextureFaceDetection.cs" Line="203" Column="40" />
-      <File FileName="Assets/Singelton.cs" Line="4" Column="19" />
+      <File FileName="Assets/WebCamTextureFaceDetection.cs" Line="96" Column="2" />
+      <File FileName="Assets/Singelton.cs" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
