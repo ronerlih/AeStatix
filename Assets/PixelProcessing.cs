@@ -29,8 +29,8 @@ namespace OpenCVForUnityExample
 		//frame processing
 		int frameCount = 0;
 		[SerializeField]
-//		[Range(1,100)]
-//		int skipFrames = 1;
+		//		[Range(1,100)]
+		//		int skipFrames = 1;
 		[Range(0.016f,5f)]
 		float secondsBtwProcessing = 0.5f;
 
@@ -54,10 +54,27 @@ namespace OpenCVForUnityExample
 		Scalar green = new Scalar(50,250,50,255);
 		Scalar blue = new Scalar(50,50,250,255);
 
-		//pointSpeed
+		//edge
 		[SerializeField]
-		[Range(1,50)]
-		int speed = 1;
+		bool edgeWeights = false;
+		[SerializeField]
+		[Range(0,255)]
+		double cannyThreshold = 60;
+		[SerializeField]
+		[Range(0,1)]
+		double 	edgeWeight = 0.5;
+		[SerializeField]
+		[Range(1f,3f)]
+		float exaggerate = 1;
+
+		//location bias
+		[SerializeField]
+		bool loactionBias = false;
+
+//		//pointSpeed
+//		[SerializeField]
+//		[Range(1,50)]
+//		int speed = 1;
 
 		/////////////////////////////////
 
@@ -100,6 +117,9 @@ namespace OpenCVForUnityExample
 
 		/// The rgb mat.
 		Mat rgbMat;
+
+		//gray mat
+		Mat grayMat;
 
 		//resize mat
 		Mat resizeMat;
@@ -256,6 +276,10 @@ namespace OpenCVForUnityExample
 				rgbMat.Dispose ();
 				rgbMat = null;
 			}
+			if (grayMat != null) {
+				grayMat.Dispose ();
+				grayMat = null;
+			}
 			if (resizeMat != null) {
 				resizeMat.Dispose ();
 				resizeMat = null;
@@ -333,6 +357,9 @@ namespace OpenCVForUnityExample
 						break;
 					}
 				}
+			
+
+				//Utils.matToTexture2D (grayMat, texture);
 				Utils.matToTexture2D (rgbaMat, texture, colors);
 
 				frameCount++;
@@ -350,14 +377,34 @@ namespace OpenCVForUnityExample
 					//clear last cenbters
 					displayCenters.Clear();
 
+					//edge detection and wights
+					if(edgeWeights){
+						grayMat = resizeMat.clone ();
+						Imgproc.cvtColor( grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+						Imgproc.threshold ( grayMat, grayMat, cannyThreshold, 255, Imgproc.THRESH_BINARY );
+						Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
+						Imgproc.blur (grayMat, grayMat, new Size (15, 15));
+
+						//weights
+						Imgproc.cvtColor (grayMat,grayMat, Imgproc.COLOR_GRAY2RGB);
+						Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
+						Core.addWeighted(resizeMat, (1 - edgeWeight), grayMat, edgeWeight, 0.0, resizeMat);
+						Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
+					}
+
+					if (loactionBias) {
+					
+					}
+
 					//split channels
 					Core.split (resizeMat, channels);
 
 					//center for each channel
 					for (int i = 0; i < channels.Count; i++) {
 						Debug.Log ("channel " + i + "is: " + channels [i]);
+
 						displayCenters.Add(getCenterPointFromMat (channels[i], i));
-					//	);
+						//	);
 					}
 
 					moments.Clear ();
@@ -369,66 +416,66 @@ namespace OpenCVForUnityExample
 
 		public Centers getCenterPointFromMat(Mat _mat, int channel){
 
-// 3rd order moment center of mass
+			// 3rd order moment center of mass
 
 			moments.Add(Imgproc.moments(_mat,false));
 			point = new Point ((int)Math.Round (moments [channel].m10 / moments [channel].m00), (int)Math.Round (moments [channel].m01 / moments [channel].m00));
 
 			//resize point up
-			point.x = map((float)point.x,0,(float)resizeSize.width,0,(float)webCamTexture.width) ;
-			point.y = map((float)point.y,0,(float)resizeSize.height,0,(float)webCamTexture.height) ;
+			point.x = map((float)point.x,0,(float)resizeSize.width ,(float)webCamTexture.width - (float)webCamTexture.width * exaggerate,(float)webCamTexture.width * exaggerate) ;
+			point.y = map((float)point.y,0,(float)resizeSize.height ,(float)webCamTexture.height - (float)webCamTexture.height * exaggerate,(float)webCamTexture.height * exaggerate) ;
 
 			centersObj.Add(new Centers(channel, point) );
-		
+
 			return centersObj [channel];
 
 
-//avaerage mean
+			//avaerage mean
 
-//			Mat row_mean = new Mat(1,1, CvType.CV_8UC1 );
-//			Mat col_mean = new Mat(1,1, CvType.CV_8UC1 );
-//			//to-do: innitiate point onStart
-//			Core.reduce (_mat,row_mean, 0, Core.REDUCE_AVG);
-//			Core.reduce (_mat,col_mean, 1, Core.REDUCE_AVG);
-//
-//			Debug.Log ("row_mean: " + row_mean);
-//			Debug.Log ("col_mean: " + col_mean);
+			//			Mat row_mean = new Mat(1,1, CvType.CV_8UC1 );
+			//			Mat col_mean = new Mat(1,1, CvType.CV_8UC1 );
+			//			//to-do: innitiate point onStart
+			//			Core.reduce (_mat,row_mean, 0, Core.REDUCE_AVG);
+			//			Core.reduce (_mat,col_mean, 1, Core.REDUCE_AVG);
+			//
+			//			Debug.Log ("row_mean: " + row_mean);
+			//			Debug.Log ("col_mean: " + col_mean);
 
 
-///run through pixels
-//
-//			Byte[] buff = new Byte[1];
-//			long xPos = 0;
-//			long yPos = 0;
-//			long zPos = 0;
-//
-//
-//			for(int j = 0;j < _mat.rows(); j++){
-////			     for memory address - to-do
-////				 IntPtr _matJ = _mat.nativeObj;
-//				 yPos += j;
-//		 		 Debug.Log ("");
-//				 for(int k = 0; k < _mat.cols(); k++){
-//					_mat.get (k, j, buff);
-//					//Debug.Log ("row number: " + j + "###" + Environment.NewLine + ", col number: "+ k + "### delta time: " + Time.deltaTime);
-//					Debug.Log ("value: " + buff[0]);
-//					xPos += k;
-//					zPos += buff [0];
-//
-//				 }
-//			}
-//				
-//
-//			z =  (xPos / _mat.cols () + yPos / _mat.rows ()) / 255;
-//			x = ((zPos / 255) + (yPos / _mat.rows ())) / _mat.cols ();
-//			y = ((zPos / 255) + (xPos / _mat.cols ())) / _mat.rows ();
-//
-//			Debug.Log("x, y, z: " + x + ", " + y + ", " + z);
-//			Debug.Log ("mat rows: " + _mat.rows ());
-//			Debug.Log ("mat cols: " + _mat.cols ());
+			///run through pixels
+			//
+			//			Byte[] buff = new Byte[1];
+			//			long xPos = 0;
+			//			long yPos = 0;
+			//			long zPos = 0;
+			//
+			//
+			//			for(int j = 0;j < _mat.rows(); j++){
+			////			     for memory address - to-do
+			////				 IntPtr _matJ = _mat.nativeObj;
+			//				 yPos += j;
+			//		 		 Debug.Log ("");
+			//				 for(int k = 0; k < _mat.cols(); k++){
+			//					_mat.get (k, j, buff);
+			//					//Debug.Log ("row number: " + j + "###" + Environment.NewLine + ", col number: "+ k + "### delta time: " + Time.deltaTime);
+			//					Debug.Log ("value: " + buff[0]);
+			//					xPos += k;
+			//					zPos += buff [0];
+			//
+			//				 }
+			//			}
+			//				
+			//
+			//			z =  (xPos / _mat.cols () + yPos / _mat.rows ()) / 255;
+			//			x = ((zPos / 255) + (yPos / _mat.rows ())) / _mat.cols ();
+			//			y = ((zPos / 255) + (xPos / _mat.cols ())) / _mat.rows ();
+			//
+			//			Debug.Log("x, y, z: " + x + ", " + y + ", " + z);
+			//			Debug.Log ("mat rows: " + _mat.rows ());
+			//			Debug.Log ("mat cols: " + _mat.cols ());
 		}
 
-			
+
 
 
 		/// <summary>
