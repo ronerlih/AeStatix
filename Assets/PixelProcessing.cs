@@ -64,12 +64,22 @@ namespace OpenCVForUnityExample
 		[Range(0,1)]
 		double 	edgeWeight = 0.5;
 		[SerializeField]
+		[Range(1,30)]
+		int blurSize = 10;
+		[SerializeField]
 		[Range(1f,3f)]
 		float exaggerate = 1;
+
 
 		//location bias
 		[SerializeField]
 		bool loactionBias = false;
+		[SerializeField]
+		[Range(0f,1f)]
+		float rationOfScreen = 0.3333f;
+		[SerializeField]
+		[Range(0f,1f)]
+		float locationWeight = 0.5f;
 
 //		//pointSpeed
 //		[SerializeField]
@@ -123,6 +133,9 @@ namespace OpenCVForUnityExample
 
 		//resize mat
 		Mat resizeMat;
+
+		//resize mat
+		Mat locationMat;
 
 		//channels List
 		List<Mat> channels = new List<Mat>();
@@ -299,9 +312,19 @@ namespace OpenCVForUnityExample
 
 			rgbaMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
-
+				
 			resizeSize = new Size ((int)Math.Round (webCamTexture.height * resizeFactor), (int)Math.Round (webCamTexture.width * resizeFactor));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
+			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
+
+			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
+				new Point((int)Math.Round( locationMat.width() * (1- rationOfScreen)),(int)Math.Round( locationMat.height() * (1 - rationOfScreen))));
+				
+			Mat submat = new Mat (new Size(sub.width,sub.height), CvType.CV_8UC3, new Scalar (255, 255, 255));
+//				.colRange ((int)Math.Round (resizeSize.height * rationOfScreen), (int)Math.Round (resizeSize.height * (1 - rationOfScreen)));
+
+			submat.copyTo(locationMat.colRange((int)Math.Round (locationMat.width() * rationOfScreen), (int)Math.Round (locationMat.width() * (1 - rationOfScreen) ))
+				.rowRange((int)Math.Round (locationMat.height() * rationOfScreen), (int)Math.Round (locationMat.height() * (1 - rationOfScreen))));
 
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
 
@@ -332,6 +355,10 @@ namespace OpenCVForUnityExample
 				Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
 				Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
 
+				if (loactionBias) {
+					Imgproc.rectangle (rgbaMat, new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen)), 
+						new Point ((int)Math.Round (rgbaMat.width () * (1- rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green,4);
+				}
 
 				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " SO:" + Screen.orientation, new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
 				//draw center
@@ -340,26 +367,26 @@ namespace OpenCVForUnityExample
 				for (int c = 0; c < displayCenters.Count; c++) {
 					switch(c){
 					case 0:
-						Imgproc.circle (rgbaMat, displayCenters [c].point, 20, red, 40);
+						Imgproc.circle (rgbaMat, displayCenters [c].point, 10, red, 20);
 						Imgproc.putText( rgbaMat, "  red", displayCenters[c].point, 2,2, red,3);
 						break;
 					case 1:
-						Imgproc.circle (rgbaMat, displayCenters [c].point, 20, green, 40);
+						Imgproc.circle (rgbaMat, displayCenters [c].point, 10, green, 20);
 						Imgproc.putText( rgbaMat, "  green" , displayCenters[c].point, 2,2, green,3);
 						break;
 					case 2:
-						Imgproc.circle (rgbaMat, displayCenters [c].point, 20, blue, 40);
+						Imgproc.circle (rgbaMat, displayCenters [c].point, 10, blue, 20);
 						Imgproc.putText( rgbaMat, "  blue" , displayCenters[c].point, 2,2, blue,3);
 						break;
 					default:
-						Imgproc.circle (rgbaMat, displayCenters [c].point, 20, red, 40);
+						Imgproc.circle (rgbaMat, displayCenters [c].point, 10, red, 20);
 						Imgproc.putText( rgbaMat, "  default" , displayCenters[c].point, 2,2, red,3);
 						break;
 					}
 				}
 			
-
-				//Utils.matToTexture2D (grayMat, texture);
+				//Imgproc.resize (locationMat, locationMat, new Size ( rgbaMat.width(),rgbaMat.height() ));
+				//Utils.matToTexture2D (locationMat, texture);
 				Utils.matToTexture2D (rgbaMat, texture, colors);
 
 				frameCount++;
@@ -381,19 +408,19 @@ namespace OpenCVForUnityExample
 					if(edgeWeights){
 						grayMat = resizeMat.clone ();
 						Imgproc.cvtColor( grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
-						Imgproc.threshold ( grayMat, grayMat, cannyThreshold, 255, Imgproc.THRESH_BINARY );
+						Imgproc.threshold ( grayMat, grayMat, cannyThreshold, 255, Imgproc.THRESH_BINARY_INV );
 						Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
-						Imgproc.blur (grayMat, grayMat, new Size (15, 15));
+						Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
 
 						//weights
 						Imgproc.cvtColor (grayMat,grayMat, Imgproc.COLOR_GRAY2RGB);
 						Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
-						Core.addWeighted(resizeMat, (1 - edgeWeight), grayMat, edgeWeight, 0.0, resizeMat);
+						Core.addWeighted(resizeMat, (1 - edgeWeight), grayMat, edgeWeight , 0.0, resizeMat);
 						Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
 					}
 
 					if (loactionBias) {
-					
+						Core.addWeighted(resizeMat, (1 - locationWeight), locationMat, locationWeight , 0.0, resizeMat);
 					}
 
 					//split channels
