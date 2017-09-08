@@ -2,10 +2,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using System;
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
+
 
 
 #if UNITY_5_3 || UNITY_5_3_OR_NEWER
@@ -402,7 +399,7 @@ namespace FrameProcessing
 				Imgproc.blur( toneMat, toneMat, new Size(blurSize,blurSize) );
 			}
 			if (centerPoint) {
-				moments.Add(Imgproc.moments (toneMat, true));
+				moments.Add(Imgproc.moments (toneMat, false));
 				WeightedCentroid.Add(new Point((int)Math.Round(moments[0].m10 / moments[0].m00), (int)Math.Round(moments[0].m01 / moments[0].m00)));
 				Debug.Log("center: " + WeightedCentroid[0].x +", " + WeightedCentroid[0].y);
 			}
@@ -414,7 +411,7 @@ namespace FrameProcessing
 				//						Debug.Log ("contour " + i + ": " + i.ToString());
 				//					}
 				//Debug.Log ("contours count: " + contours.Count);
-				moments.Add(Imgproc.moments (toneMat, true));
+				moments.Add(Imgproc.moments (toneMat, false));
 				if (WeightedCentroid.Count == 0) {
 					moments.Add(Imgproc.moments (toneMat, true));
 					WeightedCentroid.Add(new Point(0,0));

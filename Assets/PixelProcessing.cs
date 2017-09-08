@@ -9,7 +9,16 @@ using UnityEngine.SceneManagement;
 using OpenCVForUnity;
 
 namespace OpenCVForUnityExample
-{
+{	
+	public class Centers{
+		public int name{ get; set;}
+		public Point point{ get; set;}
+		public Centers(int Name, Point Point){
+			name = Name;
+			point = Point;
+		}
+
+	}
 	/// <summary>
 	/// WebCamTexture to mat example.
 	/// An example of converting the WebCamTexture image to OpenCV's Mat format.
@@ -24,7 +33,32 @@ namespace OpenCVForUnityExample
 //		int skipFrames = 1;
 		[Range(0.016f,5f)]
 		float secondsBtwProcessing = 0.5f;
-	
+
+		[SerializeField]
+		[Range(0.01f,1f)]
+		float resizeFactor = 1f;
+		Size resizeSize;
+
+		//centers
+		float x, y, z;
+		//	List <Point> centers;
+		List<Centers> centersObj = new List<Centers>();
+		List<Centers> displayCenters = new List<Centers>();
+		// temp center point
+		Point point;
+		//moments array
+		List<Moments> moments = new List<Moments>();
+
+		//draw
+		Scalar red = new Scalar(200,50,50,255);
+		Scalar green = new Scalar(50,250,50,255);
+		Scalar blue = new Scalar(50,50,250,255);
+
+		//pointSpeed
+		[SerializeField]
+		[Range(1,50)]
+		int speed = 1;
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -67,8 +101,14 @@ namespace OpenCVForUnityExample
 		/// The rgb mat.
 		Mat rgbMat;
 
+		//resize mat
+		Mat resizeMat;
+
 		//channels List
 		List<Mat> channels = new List<Mat>();
+
+		//center Points list
+		List<Point> centerPoints = new List<Point>();
 
 		/// <summary>
 		/// The colors.
@@ -216,6 +256,10 @@ namespace OpenCVForUnityExample
 				rgbMat.Dispose ();
 				rgbMat = null;
 			}
+			if (resizeMat != null) {
+				resizeMat.Dispose ();
+				resizeMat = null;
+			}
 		}
 
 		/// <summary>
@@ -228,8 +272,12 @@ namespace OpenCVForUnityExample
 			if (texture == null || texture.width != webCamTexture.width || texture.height != webCamTexture.height)
 				texture = new Texture2D (webCamTexture.width, webCamTexture.height, TextureFormat.RGBA32, false);
 
+
 			rgbaMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
+
+			resizeSize = new Size ((int)Math.Round (webCamTexture.height * resizeFactor), (int)Math.Round (webCamTexture.width * resizeFactor));
+			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
 
@@ -248,11 +296,12 @@ namespace OpenCVForUnityExample
 				Camera.main.orthographicSize = height / 2;
 			}
 
+
 			//start processing
 			StartCoroutine(processFrame());
 		}
 
-		// Update is called once per frame
+		// called once per frame
 		void Update ()
 		{
 			if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame) {
@@ -261,7 +310,29 @@ namespace OpenCVForUnityExample
 
 
 				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " SO:" + Screen.orientation, new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
+				//draw center
+				point = new Point (x, y);
 
+				for (int c = 0; c < displayCenters.Count; c++) {
+					switch(c){
+					case 0:
+						Imgproc.circle (rgbaMat, displayCenters [c].point, 20, red, 40);
+						Imgproc.putText( rgbaMat, "  red", displayCenters[c].point, 2,2, red,3);
+						break;
+					case 1:
+						Imgproc.circle (rgbaMat, displayCenters [c].point, 20, green, 40);
+						Imgproc.putText( rgbaMat, "  green" , displayCenters[c].point, 2,2, green,3);
+						break;
+					case 2:
+						Imgproc.circle (rgbaMat, displayCenters [c].point, 20, blue, 40);
+						Imgproc.putText( rgbaMat, "  blue" , displayCenters[c].point, 2,2, blue,3);
+						break;
+					default:
+						Imgproc.circle (rgbaMat, displayCenters [c].point, 20, red, 40);
+						Imgproc.putText( rgbaMat, "  default" , displayCenters[c].point, 2,2, red,3);
+						break;
+					}
+				}
 				Utils.matToTexture2D (rgbaMat, texture, colors);
 
 				frameCount++;
@@ -270,18 +341,96 @@ namespace OpenCVForUnityExample
 
 		private IEnumerator processFrame(){
 			while (true) {
-				//split channels
-				if (rgbMat != null) {
-					Core.split (rgbMat, channels);
+				//resize down
+				if (resizeMat != null) {
+					resizeSize = new Size ((int)Math.Round (webCamTexture.height * resizeFactor), (int)Math.Round (webCamTexture.width * resizeFactor));
+					//resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
+					Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+
+					//clear last cenbters
+					displayCenters.Clear();
+
+					//split channels
+					Core.split (resizeMat, channels);
+
+					//center for each channel
 					for (int i = 0; i < channels.Count; i++) {
 						Debug.Log ("channel " + i + "is: " + channels [i]);
+						displayCenters.Add(getCenterPointFromMat (channels[i], i));
+					//	);
 					}
-					//getCenterPointFromMat ();
+
+					moments.Clear ();
+					centersObj.Clear ();
 				}
-				Debug.Log ("end of a-sync loop");
 				yield return new WaitForSeconds(secondsBtwProcessing);
 			}
 		}
+
+		public Centers getCenterPointFromMat(Mat _mat, int channel){
+
+// 3rd order moment center of mass
+
+			moments.Add(Imgproc.moments(_mat,false));
+			point = new Point ((int)Math.Round (moments [channel].m10 / moments [channel].m00), (int)Math.Round (moments [channel].m01 / moments [channel].m00));
+
+			//resize point up
+			point.x = map((float)point.x,0,(float)resizeSize.width,0,(float)webCamTexture.width) ;
+			point.y = map((float)point.y,0,(float)resizeSize.height,0,(float)webCamTexture.height) ;
+
+			centersObj.Add(new Centers(channel, point) );
+		
+			return centersObj [channel];
+
+
+//avaerage mean
+
+//			Mat row_mean = new Mat(1,1, CvType.CV_8UC1 );
+//			Mat col_mean = new Mat(1,1, CvType.CV_8UC1 );
+//			//to-do: innitiate point onStart
+//			Core.reduce (_mat,row_mean, 0, Core.REDUCE_AVG);
+//			Core.reduce (_mat,col_mean, 1, Core.REDUCE_AVG);
+//
+//			Debug.Log ("row_mean: " + row_mean);
+//			Debug.Log ("col_mean: " + col_mean);
+
+
+///run through pixels
+//
+//			Byte[] buff = new Byte[1];
+//			long xPos = 0;
+//			long yPos = 0;
+//			long zPos = 0;
+//
+//
+//			for(int j = 0;j < _mat.rows(); j++){
+////			     for memory address - to-do
+////				 IntPtr _matJ = _mat.nativeObj;
+//				 yPos += j;
+//		 		 Debug.Log ("");
+//				 for(int k = 0; k < _mat.cols(); k++){
+//					_mat.get (k, j, buff);
+//					//Debug.Log ("row number: " + j + "###" + Environment.NewLine + ", col number: "+ k + "### delta time: " + Time.deltaTime);
+//					Debug.Log ("value: " + buff[0]);
+//					xPos += k;
+//					zPos += buff [0];
+//
+//				 }
+//			}
+//				
+//
+//			z =  (xPos / _mat.cols () + yPos / _mat.rows ()) / 255;
+//			x = ((zPos / 255) + (yPos / _mat.rows ())) / _mat.cols ();
+//			y = ((zPos / 255) + (xPos / _mat.cols ())) / _mat.rows ();
+//
+//			Debug.Log("x, y, z: " + x + ", " + y + ", " + z);
+//			Debug.Log ("mat rows: " + _mat.rows ());
+//			Debug.Log ("mat cols: " + _mat.cols ());
+		}
+
+			
+
+
 		/// <summary>
 		/// Raises the destroy event.
 		/// </summary>
@@ -337,5 +486,10 @@ namespace OpenCVForUnityExample
 			if (hasInitDone)
 				Initialize (null, requestedWidth, requestedHeight, !requestedIsFrontFacing);
 		}
+		public float map(float s, float a1, float a2, float b1, float b2)
+		{
+			return b1 + (s-a1)*(b2-b1)/(a2-a1);
+		}
+
 	}
 }
