@@ -4,6 +4,8 @@ using System.Collections;
 public class FPSDisplay : MonoBehaviour
 {
 	float deltaTime = 0.0f;
+	[SerializeField]
+	Color color = new Color (66f/255f, 1.0f, 203f/255f);
 
 	void Update()
 	{
@@ -19,7 +21,7 @@ public class FPSDisplay : MonoBehaviour
 		Rect rect = new Rect(-5, 9, w, h * 2 / 50);
 		style.alignment = TextAnchor.UpperRight;
 		style.fontSize = h * 2 / 60;
-		style.normal.textColor = new Color (66f/255f, 1.0f, 203f/255f);
+		style.normal.textColor = color;
 
 
 		float msec = deltaTime * 1000.0f;

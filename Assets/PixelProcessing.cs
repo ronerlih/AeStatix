@@ -27,6 +27,10 @@ namespace OpenCVForUnityExample
 	{
 
 		//frame processing
+		//show mats
+		[Header("Analysis")]
+		[SerializeField]
+		bool showCalcMats = false;
 		int frameCount = 0;
 		[SerializeField]
 		//		[Range(1,100)]
@@ -37,11 +41,14 @@ namespace OpenCVForUnityExample
 		[SerializeField]
 		[Range(0.01f,1f)]
 		float resizeFactor = 1f;
-		Size resizeSize;
-
-		//show mats
 		[SerializeField]
-		bool showMats = true;
+		[Range(1f,3f)]
+		float exaggerateData = 1;
+		Size resizeSize;
+		[Space(10)]
+
+
+	
 
 		//centers
 		float x, y, z;
@@ -59,11 +66,12 @@ namespace OpenCVForUnityExample
 		Scalar blue = new Scalar(50,50,250,255);
 
 		//edge
+		[Header("Edge")]
 		[SerializeField]
-		bool edgeWeights = false;
+		bool edgeBias = false;
 		[SerializeField]
 		[Range(0,255)]
-		double cannyThreshold = 60;
+		double edgeThreshold = 60;
 		[SerializeField]
 		[Range(0,1)]
 		double 	edgeWeight = 0.5;
@@ -71,14 +79,14 @@ namespace OpenCVForUnityExample
 		[Range(1,30)]
 		int blurSize = 10;
 		[SerializeField]
-		[Range(1f,3f)]
-		float exaggerate = 1;
-		[SerializeField]
 		[Range(0,100)]
 		double edgeGamma = 0;
+		[Space(10)]
+
 
 
 		//location bias
+		[Header("Location")]
 		[SerializeField]
 		bool loactionBias = false;
 		[SerializeField]
@@ -98,22 +106,22 @@ namespace OpenCVForUnityExample
 		/// <summary>
 		/// Set this to specify the name of the device to use.
 		/// </summary>
-		public string requestedDeviceName = null;
+		 string requestedDeviceName = null;
 
 		/// <summary>
 		/// Set the requested width of the camera device.
 		/// </summary>
-		public int requestedWidth = 640;
+		 int requestedWidth = 640;
 
 		/// <summary>
 		/// Set the requested height of the camera device.
 		/// </summary>
-		public int requestedHeight = 480;
+		 int requestedHeight = 480;
 
 		/// <summary>
 		/// Set the requested to using the front camera.
 		/// </summary>
-		public bool requestedIsFrontFacing = false;
+		 bool requestedIsFrontFacing = false;
 
 		/// <summary>
 		/// The webcam texture.
@@ -351,7 +359,7 @@ namespace OpenCVForUnityExample
 
 			float widthScale = (float)Screen.width / width;
 			float heightScale = (float)Screen.height / height;
-			if (widthScale < heightScale) {
+			if (widthScale > heightScale) {
 				Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) / 2;
 			} else {
 				Camera.main.orthographicSize = height / 2;
@@ -369,14 +377,14 @@ namespace OpenCVForUnityExample
 				Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
 				Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
 
+				//green LOCATION rect GUI
 				if (loactionBias) {
 					Imgproc.rectangle (rgbaMat, new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen)), 
 						new Point ((int)Math.Round (rgbaMat.width () * (1- rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green,4);
 				}
 
-				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " SO:" + Screen.orientation, new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
-				//draw center
-				point = new Point (x, y);
+				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height (), new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
+				//draw centers
 
 				for (int c = 0; c < displayCenters.Count; c++) {
 					switch(c){
@@ -419,11 +427,11 @@ namespace OpenCVForUnityExample
 					displayCenters.Clear();
 
 					//edge detection and wights
-					if(edgeWeights){
+					if(edgeBias){
 						grayMat = resizeMat.clone ();
 						Imgproc.cvtColor( grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
-						Imgproc.threshold ( grayMat, grayMat, cannyThreshold, 255, Imgproc.THRESH_BINARY_INV );
-						Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
+						Imgproc.threshold ( grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY_INV );
+						Imgproc.Canny (grayMat, grayMat, edgeThreshold, edgeThreshold);
 						Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
 
 						//weights
@@ -460,8 +468,8 @@ namespace OpenCVForUnityExample
 			point = new Point ((int)Math.Round (moments [channel].m10 / moments [channel].m00), (int)Math.Round (moments [channel].m01 / moments [channel].m00));
 
 			//resize point up
-			point.x = map((float)point.x,0,(float)resizeSize.width ,(float)webCamTexture.width - (float)webCamTexture.width * exaggerate,(float)webCamTexture.width * exaggerate) ;
-			point.y = map((float)point.y,0,(float)resizeSize.height ,(float)webCamTexture.height - (float)webCamTexture.height * exaggerate,(float)webCamTexture.height * exaggerate) ;
+			point.x = map((float)point.x,0,(float)resizeSize.width ,(float)webCamTexture.width - (float)webCamTexture.width * exaggerateData,(float)webCamTexture.width * exaggerateData) ;
+			point.y = map((float)point.y,0,(float)resizeSize.height ,(float)webCamTexture.height - (float)webCamTexture.height * exaggerateData,(float)webCamTexture.height * exaggerateData) ;
 
 			centersObj.Add(new Centers(channel, point) );
 
@@ -576,13 +584,13 @@ namespace OpenCVForUnityExample
 			return b1 + (s-a1)*(b2-b1)/(a2-a1);
 		}
 		void OnGUI(){
-			if (showMats) {
+			if (showCalcMats) {
 				unityRect = new UnityEngine.Rect (0f, 0f, (float)resizeSize.width, (float)resizeSize.height);
 
 				if (loactionBias && locationTexture != null) {
 					GUImat = locationMat.clone ();
 				
-					if (edgeWeights) {
+					if (edgeBias) {
 						Core.addWeighted (locationMat, (1 - edgeWeight), grayMat, edgeWeight, edgeGamma, GUImat);
 //
 					}
@@ -590,7 +598,7 @@ namespace OpenCVForUnityExample
 					Utils.matToTexture2D (GUImat, locationTexture);
 					GUI.DrawTexture (unityRect, locationTexture);
 				}
-				if (edgeWeights && !loactionBias) {
+				if (edgeBias && !loactionBias) {
 					
 					GUImat = grayMat.clone ();
 					Utils.matToTexture2D (GUImat, locationTexture);
