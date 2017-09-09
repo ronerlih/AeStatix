@@ -73,6 +73,9 @@ namespace OpenCVForUnityExample
 		[SerializeField]
 		[Range(1f,3f)]
 		float exaggerate = 1;
+		[SerializeField]
+		[Range(0,100)]
+		double edgeGamma = 0;
 
 
 		//location bias
@@ -426,7 +429,7 @@ namespace OpenCVForUnityExample
 						//weights
 						Imgproc.cvtColor (grayMat,grayMat, Imgproc.COLOR_GRAY2RGB);
 						//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
-						Core.addWeighted(resizeMat, (1 - edgeWeight), grayMat, edgeWeight , 0.0, resizeMat);
+						Core.addWeighted(resizeMat, (1 - edgeWeight), grayMat, edgeWeight , edgeGamma, resizeMat);
 						//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
 					}
 
@@ -580,7 +583,8 @@ namespace OpenCVForUnityExample
 					GUImat = locationMat.clone ();
 				
 					if (edgeWeights) {
-						Core.addWeighted (locationMat, (1 - edgeWeight), grayMat, edgeWeight, 0.0, GUImat);
+						Core.addWeighted (locationMat, (1 - edgeWeight), grayMat, edgeWeight, edgeGamma, GUImat);
+//
 					}
 
 					Utils.matToTexture2D (GUImat, locationTexture);
