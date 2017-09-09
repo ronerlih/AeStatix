@@ -81,7 +81,6 @@ namespace OpenCVForUnityExample
 		[SerializeField]
 		[Range(0,100)]
 		double edgeGamma = 0;
-		[Space(10)]
 
 
 
@@ -96,11 +95,26 @@ namespace OpenCVForUnityExample
 		[Range(0f,1f)]
 		float locationWeight = 0.5f;
 		UnityEngine.Rect unityRect;
+		[Space(10)]
 //		//pointSpeed
 //		[SerializeField]
 //		[Range(1,50)]
 //		int speed = 1;
 
+
+		//color coeficientes
+		[Header("Color")]
+		[SerializeField]
+		bool individualColorCoeficients = false;
+		[SerializeField]
+		[Range(0,1)]
+		float redCoeficiente = 0;
+		[SerializeField]
+		[Range(0,1)]
+		float greenCoeficiente = 0;
+		[SerializeField]
+		[Range(0,1)]
+		float blueCoeficiente = 0;
 		/////////////////////////////////
 
 		/// <summary>
@@ -151,6 +165,10 @@ namespace OpenCVForUnityExample
 
 		//resize mat
 		Mat locationMat;
+
+		//white mat
+		Mat whiteMat;
+
 		//resize mat
 		Mat GUImat;
 
@@ -313,6 +331,14 @@ namespace OpenCVForUnityExample
 				grayMat.Dispose ();
 				grayMat = null;
 			}
+			if (whiteMat != null) {
+				whiteMat.Dispose ();
+				whiteMat = null;
+			}
+			if (locationMat != null) {
+				locationMat.Dispose ();
+				locationMat = null;
+			}
 			if (resizeMat != null) {
 				resizeMat.Dispose ();
 				resizeMat = null;
@@ -336,6 +362,7 @@ namespace OpenCVForUnityExample
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
+			whiteMat = new Mat(resizeSize, CvType.CV_8UC1, new Scalar(255,255,255));
 			GUImat = new Mat( resizeSize, CvType.CV_8UC3);
 
 			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
@@ -462,8 +489,24 @@ namespace OpenCVForUnityExample
 
 		public Centers getCenterPointFromMat(Mat _mat, int channel){
 
-			// 3rd order moment center of mass
+			if (individualColorCoeficients) {
+				switch (channel) {
+				case 0:
+					Core.addWeighted (whiteMat, redCoeficiente, _mat, (1 - redCoeficiente),0.0, _mat);
+					break;
+				case 1:
+					Core.addWeighted (whiteMat, greenCoeficiente, _mat, (1 - greenCoeficiente), 0.0, _mat);
+					break;
+				case 2:
+					Core.addWeighted (whiteMat, blueCoeficiente, _mat, (1 - blueCoeficiente), 0.0, _mat);
+					break;
+				default:
+					Debug.Log ("DEFAULT switch state, unexpected channel");
+					break;
 
+				}
+			}
+			// 3rd order moment center of mass
 			moments.Add(Imgproc.moments(_mat,false));
 			point = new Point ((int)Math.Round (moments [channel].m10 / moments [channel].m00), (int)Math.Round (moments [channel].m01 / moments [channel].m00));
 
