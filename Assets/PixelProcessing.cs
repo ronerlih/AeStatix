@@ -169,6 +169,8 @@ namespace OpenCVForUnityExample
 		//white mat
 		Mat whiteMat;
 
+		//black mat
+		Mat blackMat;
 		//resize mat
 		Mat GUImat;
 
@@ -337,6 +339,10 @@ namespace OpenCVForUnityExample
 				whiteMat.Dispose ();
 				whiteMat = null;
 			}
+			if (blackMat != null) {
+				blackMat.Dispose ();
+				blackMat = null;
+			}
 			if (locationMat != null) {
 				locationMat.Dispose ();
 				locationMat = null;
@@ -368,8 +374,9 @@ namespace OpenCVForUnityExample
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
-			whiteMat = new Mat(resizeSize, CvType.CV_8UC1, new Scalar(255,255,255));
-			GUImat = new Mat( resizeSize, CvType.CV_8UC3);
+			whiteMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(255,255,255));
+			blackMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
+			GUImat = new Mat( resizeSize, CvType.CV_8UC1);
 
 			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
 				new Point((int)Math.Round( locationMat.width() * (1- rationOfScreen)),(int)Math.Round( locationMat.height() * (1 - rationOfScreen))));
@@ -641,10 +648,10 @@ namespace OpenCVForUnityExample
 					GUImat = locationMat.clone ();
 				
 					if (edgeBias) {
-						Core.addWeighted (grayMat, (edgeWeight), whiteMat, (1 - edgeWeight), edgeGamma, GUImat);
+						Core.addWeighted (grayMat, (edgeWeight), blackMat, (1 - edgeWeight), edgeGamma, grayMat);
 						Core.addWeighted (locationMat, locationWeight, grayMat, (1 - locationWeight), 0.0, GUImat);
 					} else {
-						Core.addWeighted (locationMat, locationWeight, whiteMat, (1 - locationWeight), 0.0, GUImat);
+						Core.addWeighted (locationMat, locationWeight, blackMat, (1 - locationWeight), 0.0, GUImat);
 
 					}
 
@@ -654,9 +661,10 @@ namespace OpenCVForUnityExample
 				}
 				if (edgeBias && !loactionBias) {
 					
-					Core.addWeighted (grayMat, (edgeWeight), whiteMat, (1-edgeWeight), edgeGamma, GUImat);
+					GUImat = blackMat.clone ();
 
-					GUImat = grayMat.clone ();
+					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
+
 					Utils.matToTexture2D (GUImat, locationTexture);
 					GUI.DrawTexture (unityRect, locationTexture);
 				}
