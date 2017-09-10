@@ -641,15 +641,21 @@ namespace OpenCVForUnityExample
 					GUImat = locationMat.clone ();
 				
 					if (edgeBias) {
-						Core.addWeighted (locationMat, (1 - edgeWeight), grayMat, edgeWeight, edgeGamma, GUImat);
-//
+						Core.addWeighted (grayMat, (edgeWeight), whiteMat, (1 - edgeWeight), edgeGamma, GUImat);
+						Core.addWeighted (locationMat, locationWeight, grayMat, (1 - locationWeight), 0.0, GUImat);
+					} else {
+						Core.addWeighted (locationMat, locationWeight, whiteMat, (1 - locationWeight), 0.0, GUImat);
+
 					}
+
 
 					Utils.matToTexture2D (GUImat, locationTexture);
 					GUI.DrawTexture (unityRect, locationTexture);
 				}
 				if (edgeBias && !loactionBias) {
 					
+					Core.addWeighted (grayMat, (edgeWeight), whiteMat, (1-edgeWeight), edgeGamma, GUImat);
+
 					GUImat = grayMat.clone ();
 					Utils.matToTexture2D (GUImat, locationTexture);
 					GUI.DrawTexture (unityRect, locationTexture);
