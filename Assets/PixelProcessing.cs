@@ -14,7 +14,7 @@ namespace OpenCVForUnityExample
 		public int name{ get; set;}
 		public Point point{ get; set;}
 		public Centers(int Name, Point Point){
-			name = Name;
+			name = Name; //TO-DO: match int var to names of channels
 			point = Point;
 		}
 
@@ -52,7 +52,6 @@ namespace OpenCVForUnityExample
 
 		//centers
 		float x, y, z;
-		//	List <Point> centers;
 		List<Centers> centersObj = new List<Centers>();
 		List<Centers> displayCenters = new List<Centers>();
 		// temp center point
@@ -92,10 +91,13 @@ namespace OpenCVForUnityExample
 		[Range(0f,1f)]
 		float rationOfScreen = 0.3333f;
 		[SerializeField]
+		bool drawRect = true;
+		[SerializeField]
 		[Range(0f,1f)]
 		float locationWeight = 0.5f;
 		UnityEngine.Rect unityRect;
 		[Space(10)]
+
 //		//pointSpeed
 //		[SerializeField]
 //		[Range(1,50)]
@@ -374,7 +376,7 @@ namespace OpenCVForUnityExample
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
-			whiteMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(255,255,255));
+			whiteMat = new Mat(resizeSize, CvType.CV_8UC1, new Scalar(255));
 			blackMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
 			GUImat = new Mat( resizeSize, CvType.CV_8UC1);
 
@@ -400,7 +402,7 @@ namespace OpenCVForUnityExample
 			float widthScale = (float)Screen.width / width;
 			float heightScale = (float)Screen.height / height;
 			//camera snap
-			if (widthScale < heightScale) {
+			if (widthScale > heightScale) {
 				Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) / 2;
 			} else {
 				Camera.main.orthographicSize = height / 2;
@@ -419,7 +421,7 @@ namespace OpenCVForUnityExample
 				Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
 
 				//green LOCATION rect GUI
-				if (loactionBias) {
+				if (showCalcMats && loactionBias && drawRect) {
 					Imgproc.rectangle (rgbaMat, new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen)), 
 						new Point ((int)Math.Round (rgbaMat.width () * (1- rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green,4);
 				}
@@ -642,6 +644,9 @@ namespace OpenCVForUnityExample
 		}
 		void OnGUI(){
 			if (showCalcMats) {
+				
+				//only black rect
+
 				if (!loactionBias && !edgeBias) {
 					unityRect = new UnityEngine.Rect (5f, 5f, (float)resizeSize.width / 4, (float)resizeSize.height / 4);
 					GUImat = blackMat.clone ();
