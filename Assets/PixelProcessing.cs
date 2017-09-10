@@ -50,6 +50,9 @@ namespace OpenCVForUnityExample
 		int centersMaxStep = 1;
 		[SerializeField]
 		bool displaySpeed = false;
+		[SerializeField]
+		[Range(0.9f,1f)]
+		float speed = 0.1f;
 		[Space(10)]
 
 
@@ -436,7 +439,7 @@ namespace OpenCVForUnityExample
 				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height (), new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
 				//draw centers
 				if (displaySpeed) {
-					checkForCentersData (displayCenters);
+					checkForCentersData ();
 				
 					for (int c = 0; c < currentCenters.Count; c++) {
 						switch (c) {
@@ -489,32 +492,34 @@ namespace OpenCVForUnityExample
 				frameCount++;
 			}
 		}
-		public void checkForCentersData(List<Centers> _centers){
-				if (currentCenters.Count == 0 || displayCenters.Count == 0) {
-					for (int d = 0; d < _centers.Count; d++) {
+		public void checkForCentersData(){
+			if (currentCenters.Count == 0 || frameCount == 0) {
+				for (int d = 0; d < displayCenters.Count; d++) {
 						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
-						Debug.Log ("current centers: " + _centers [d]);
+					Debug.Log ("current centers: " + displayCenters [d]);
 					}
 				}
 				//currentCenters
-				for (int h = 0; h < _centers.Count; h++) {
-					//x net data is larger
-					if (_centers [h].point.x > currentCenters [h].point.x) {
-						currentCenters [h].point.x += centersMaxStep;
-					}
-					//x new data is smaller
-					if (_centers [h].point.x < currentCenters [h].point.x) {
-						currentCenters [h].point.x -= centersMaxStep;
-					}
-					//y new data is larger
-					if (_centers [h].point.y > currentCenters [h].point.y) {
-						currentCenters [h].point.y += centersMaxStep;
-					}
-					//y new data is smaller
-					if (_centers [h].point.y < currentCenters [h].point.y) {
-						currentCenters [h].point.y -= centersMaxStep;
-					}
-				}
+			for (int h = 0; h < displayCenters.Count; h++) {
+				currentCenters [h].point.x = speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed);
+				currentCenters [h].point.y = speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed);
+//				//x net data is larger
+//				if (_centers [h].point.x > currentCenters [h].point.x) {
+//					currentCenters [h].point.x += centersMaxStep;
+//				}
+//				//x new data is smaller
+//				if (_centers [h].point.x < currentCenters [h].point.x) {
+//					currentCenters [h].point.x -= centersMaxStep;
+//				}
+//				//y new data is larger
+//				if (_centers [h].point.y > currentCenters [h].point.y) {
+//					currentCenters [h].point.y += centersMaxStep;
+//				}
+//				//y new data is smaller
+//				if (_centers [h].point.y < currentCenters [h].point.y) {
+//					currentCenters [h].point.y -= centersMaxStep;
+//				}
+			}
 		}
 
 		private IEnumerator processFrame(){
@@ -585,7 +590,7 @@ namespace OpenCVForUnityExample
 
 			// 3rd order moment center of mass
 			moments.Add(Imgproc.moments(_mat,false));
-			point = new Point ((int)Math.Round (moments [channel].m10 / moments [channel].m00), (int)Math.Round (moments [channel].m01 / moments [channel].m00));
+			point = new Point ((moments [channel].m10 / moments [channel].m00), (moments [channel].m01 / moments [channel].m00));
 
 			//resize point up
 			point.x = map((float)point.x,0,(float)resizeSize.width ,(float)webCamTexture.width - (float)webCamTexture.width * exaggerateData,(float)webCamTexture.width * exaggerateData) ;
@@ -704,7 +709,7 @@ namespace OpenCVForUnityExample
 			return b1 + (s-a1)*(b2-b1)/(a2-a1);
 		}
 		void OnGUI(){
-			if (showCalcMats) {
+			if (showCalcMats && frameCount >= 10) {
 				
 				//only black rect
 
