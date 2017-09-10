@@ -12,7 +12,7 @@ namespace OpenCVForUnityExample
 {	
 	public class Centers{
 		public int name{ get; set;}
-		public Point point{ get; set;}
+		public Point point { get; set;}
 		public Centers(int Name, Point Point){
 			name = Name; //TO-DO: match int var to names of channels
 			point = Point;
@@ -45,6 +45,11 @@ namespace OpenCVForUnityExample
 		[Range(1f,3f)]
 		float exaggerateData = 1;
 		Size resizeSize;
+		[SerializeField]
+		[Range(1,50)]
+		int centersMaxStep = 1;
+		[SerializeField]
+		bool displaySpeed = false;
 		[Space(10)]
 
 
@@ -54,6 +59,7 @@ namespace OpenCVForUnityExample
 		float x, y, z;
 		List<Centers> centersObj = new List<Centers>();
 		List<Centers> displayCenters = new List<Centers>();
+		List<Centers> currentCenters = new List<Centers>();
 		// temp center point
 		Point point;
 		//moments array
@@ -375,6 +381,7 @@ namespace OpenCVForUnityExample
 				
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
+			Debug.Log ("analysis size: " + resizeSize.width + "px, " + resizeSize.height + "px");
 			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
 			whiteMat = new Mat(resizeSize, CvType.CV_8UC1, new Scalar(255));
 			blackMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
@@ -428,34 +435,86 @@ namespace OpenCVForUnityExample
 
 				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height (), new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
 				//draw centers
+				if (displaySpeed) {
+					checkForCentersData (displayCenters);
+				
+					for (int c = 0; c < currentCenters.Count; c++) {
+						switch (c) {
+						case 0:
+							Imgproc.circle (rgbaMat, currentCenters [c].point, 10, red, 20);
+							Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 2, red, 3);
+							break;
+						case 1:
+							Imgproc.circle (rgbaMat, currentCenters [c].point, 10, green, 20);
+							Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 2, green, 3);
+							break;
+						case 2:
+							Imgproc.circle (rgbaMat, currentCenters [c].point, 10, blue, 20);
+							Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 2, blue, 3);
+							break;
+						default:
+							Imgproc.circle (rgbaMat, currentCenters [c].point, 10, red, 20);
+							Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 2, red, 3);
+							break;
+						}
+					}
+				} else {
 
-				for (int c = 0; c < displayCenters.Count; c++) {
-					switch(c){
-					case 0:
-						Imgproc.circle (rgbaMat, displayCenters [c].point, 10, red, 20);
-						Imgproc.putText( rgbaMat, "  red", displayCenters[c].point, 2,2, red,3);
-						break;
-					case 1:
-						Imgproc.circle (rgbaMat, displayCenters [c].point, 10, green, 20);
-						Imgproc.putText( rgbaMat, "  green" , displayCenters[c].point, 2,2, green,3);
-						break;
-					case 2:
-						Imgproc.circle (rgbaMat, displayCenters [c].point, 10, blue, 20);
-						Imgproc.putText( rgbaMat, "  blue" , displayCenters[c].point, 2,2, blue,3);
-						break;
-					default:
-						Imgproc.circle (rgbaMat, displayCenters [c].point, 10, red, 20);
-						Imgproc.putText( rgbaMat, "  default" , displayCenters[c].point, 2,2, red,3);
-						break;
+					for (int c = 0; c < displayCenters.Count; c++) {
+						switch (c) {
+						case 0:
+							Imgproc.circle (rgbaMat, displayCenters [c].point, 10, red, 20);
+							Imgproc.putText (rgbaMat, "  red", displayCenters [c].point, 2, 2, red, 3);
+							break;
+						case 1:
+							Imgproc.circle (rgbaMat, displayCenters [c].point, 10, green, 20);
+							Imgproc.putText (rgbaMat, "  green", displayCenters [c].point, 2, 2, green, 3);
+							break;
+						case 2:
+							Imgproc.circle (rgbaMat, displayCenters [c].point, 10, blue, 20);
+							Imgproc.putText (rgbaMat, "  blue", displayCenters [c].point, 2, 2, blue, 3);
+							break;
+						default:
+							Imgproc.circle (rgbaMat, displayCenters [c].point, 10, red, 20);
+							Imgproc.putText (rgbaMat, "  default", displayCenters [c].point, 2, 2, red, 3);
+							break;
+						}
 					}
 				}
-			
+				
 				//Imgproc.resize (locationMat, locationMat, new Size ( rgbaMat.width(),rgbaMat.height() ));
 				//Utils.matToTexture2D (locationMat, texture);
 				Utils.matToTexture2D (rgbaMat, texture, colors);
 
 				frameCount++;
 			}
+		}
+		public void checkForCentersData(List<Centers> _centers){
+				if (currentCenters.Count == 0 || displayCenters.Count == 0) {
+					for (int d = 0; d < _centers.Count; d++) {
+						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
+						Debug.Log ("current centers: " + _centers [d]);
+					}
+				}
+				//currentCenters
+				for (int h = 0; h < _centers.Count; h++) {
+					//x net data is larger
+					if (_centers [h].point.x > currentCenters [h].point.x) {
+						currentCenters [h].point.x += centersMaxStep;
+					}
+					//x new data is smaller
+					if (_centers [h].point.x < currentCenters [h].point.x) {
+						currentCenters [h].point.x -= centersMaxStep;
+					}
+					//y new data is larger
+					if (_centers [h].point.y > currentCenters [h].point.y) {
+						currentCenters [h].point.y += centersMaxStep;
+					}
+					//y new data is smaller
+					if (_centers [h].point.y < currentCenters [h].point.y) {
+						currentCenters [h].point.y -= centersMaxStep;
+					}
+				}
 		}
 
 		private IEnumerator processFrame(){
@@ -505,6 +564,7 @@ namespace OpenCVForUnityExample
 
 		public Centers getCenterPointFromMat(Mat _mat, int channel){
 
+			//color coeficiencets
 			if (individualColorCoeficients) {
 				switch (channel) {
 				case 0:
@@ -522,6 +582,7 @@ namespace OpenCVForUnityExample
 
 				}
 			}
+
 			// 3rd order moment center of mass
 			moments.Add(Imgproc.moments(_mat,false));
 			point = new Point ((int)Math.Round (moments [channel].m10 / moments [channel].m00), (int)Math.Round (moments [channel].m01 / moments [channel].m00));
