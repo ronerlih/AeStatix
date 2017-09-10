@@ -642,8 +642,12 @@ namespace OpenCVForUnityExample
 		}
 		void OnGUI(){
 			if (showCalcMats) {
-				unityRect = new UnityEngine.Rect (5f, 5f,(float)resizeSize.width/4,(float)resizeSize.height/4 );
-
+				if (!loactionBias && !edgeBias) {
+					unityRect = new UnityEngine.Rect (5f, 5f, (float)resizeSize.width / 4, (float)resizeSize.height / 4);
+					GUImat = blackMat.clone ();
+					Utils.matToTexture2D (GUImat, locationTexture);
+					GUI.DrawTexture (unityRect, locationTexture);
+				}
 				if (loactionBias && locationTexture != null) {
 					GUImat = locationMat.clone ();
 				
