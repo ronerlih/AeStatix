@@ -172,6 +172,8 @@ namespace OpenCVForUnityExample
 		//resize mat
 		Mat GUImat;
 
+		//submat
+		Mat submat;
 		//channels List
 		List<Mat> channels = new List<Mat>();
 
@@ -343,6 +345,10 @@ namespace OpenCVForUnityExample
 				resizeMat.Dispose ();
 				resizeMat = null;
 			}
+			if (submat != null) {
+				submat.Dispose ();
+				submat = null;
+			}
 		}
 
 		/// <summary>
@@ -367,7 +373,7 @@ namespace OpenCVForUnityExample
 
 			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
 				new Point((int)Math.Round( locationMat.width() * (1- rationOfScreen)),(int)Math.Round( locationMat.height() * (1 - rationOfScreen))));
-			Mat submat = new Mat (new Size(sub.width,sub.height), CvType.CV_8UC3, new Scalar (255, 255, 255));
+			submat = new Mat (new Size(sub.width,sub.height), CvType.CV_8UC3, new Scalar (255, 255, 255));
 
 			submat.copyTo(locationMat.colRange((int)Math.Round (locationMat.width() * rationOfScreen), (int)Math.Round (locationMat.width() * (1 - rationOfScreen) ))
 				.rowRange((int)Math.Round (locationMat.height() * rationOfScreen), (int)Math.Round (locationMat.height() * (1 - rationOfScreen))));
@@ -386,7 +392,8 @@ namespace OpenCVForUnityExample
 
 			float widthScale = (float)Screen.width / width;
 			float heightScale = (float)Screen.height / height;
-			if (widthScale > heightScale) {
+			//camera snap
+			if (widthScale < heightScale) {
 				Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) / 2;
 			} else {
 				Camera.main.orthographicSize = height / 2;
@@ -628,7 +635,7 @@ namespace OpenCVForUnityExample
 		}
 		void OnGUI(){
 			if (showCalcMats) {
-				unityRect = new UnityEngine.Rect (0f, 0f, (float)resizeSize.width, (float)resizeSize.height);
+				unityRect = new UnityEngine.Rect (5f, 5f,(float)resizeSize.width/4,(float)resizeSize.height/4 );
 
 				if (loactionBias && locationTexture != null) {
 					GUImat = locationMat.clone ();

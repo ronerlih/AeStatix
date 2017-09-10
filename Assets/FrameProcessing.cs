@@ -64,8 +64,9 @@ namespace FrameProcessing
 		int  max_lowThreshold = 100;
 		int ratio = 3;
 
-		Mat hierarchy;
-		List< MatOfPoint > contours = new List<MatOfPoint>(); 	
+//		Mat hierarchy;
+//		List< MatOfPoint > contours = new List<MatOfPoint>(); 	
+
 
 		List<Point> WeightedCentroid = new List<Point>();
 
@@ -161,10 +162,10 @@ namespace FrameProcessing
 		//clone mat (temp)
 		Mat cloneMat;
 
-		//blob detector
-		FeatureDetector blobDetector = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
-		//key point 
-		MatOfKeyPoint keypoints = new MatOfKeyPoint();
+//		//blob detector
+//		FeatureDetector blobDetector = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
+//		//key point 
+//		MatOfKeyPoint keypoints = new MatOfKeyPoint();
 
 		//Size var
 		Size size;
@@ -313,7 +314,10 @@ namespace FrameProcessing
 				cloneMat.Dispose ();
 				cloneMat = null;
 			}
-
+			if (cloneMat != null) {
+				cloneMat.Dispose ();
+				cloneMat = null;
+			}
 		}
 
 		/// <summary>
@@ -334,7 +338,7 @@ namespace FrameProcessing
 			cloneMat = rgbaMat.clone ();
 			//rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 			toneMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
-			hierarchy = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
+//			hierarchy = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1);
 			//toneMat = rgbaMat.clone ();
 			//inversionMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC1, new Scalar(255));
 
@@ -348,7 +352,7 @@ namespace FrameProcessing
 
 			float widthScale = (float)Screen.width / width;
 			float heightScale = (float)Screen.height / height;
-			if (widthScale > heightScale) {
+			if (widthScale < heightScale) {
 				Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) / 2;
 			} else {
 				Camera.main.orthographicSize = height / 2;
@@ -391,10 +395,10 @@ namespace FrameProcessing
 			if (toneThreshold){
 				Imgproc.threshold ( toneMat, toneMat, thresholdValue, 255, Imgproc.THRESH_BINARY );
 			}
-			if (blobs) {
-				blobDetector.detect(toneMat, keypoints);
-				Features2d.drawKeypoints(toneMat, keypoints, toneMat);
-			}
+//			if (blobs) {
+//				blobDetector.detect(toneMat, keypoints);
+//				Features2d.drawKeypoints(toneMat, keypoints, toneMat);
+//			}
 			if (blur) {
 				Imgproc.blur( toneMat, toneMat, new Size(blurSize,blurSize) );
 			}
@@ -440,7 +444,6 @@ namespace FrameProcessing
 
 			WeightedCentroid.Clear ();
 			moments.Clear ();
-			contours.Clear ();
 
 			framesDropCount = 0;
 
