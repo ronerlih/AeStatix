@@ -462,7 +462,7 @@ namespace OpenCVForUnityExample
 					Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width() / 2) - snapToCenterSize, (rgbaMat.height() / 2) - snapToCenterSize), new Point ((rgbaMat.width() / 2) + snapToCenterSize, (rgbaMat.height() / 2) + snapToCenterSize), blue, 2);
 					Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), 0, 0.8, blue, 2);
 				}
-				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "seconds", new Point (((rgbaMat.width()/2) - 530) , 28), 0, 0.8, green, 2, Imgproc.LINE_AA, false);
+				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5 , 28), 0, 0.8, green, 2, Imgproc.LINE_AA, false);
 				//draw centers
 				if (displaySpeed) {
 					if (snapToCenter) {
@@ -474,19 +474,19 @@ namespace OpenCVForUnityExample
 					for (int c = 0; c < currentCenters.Count; c++) {
 						switch (c) {
 						case 0:
-							Imgproc.circle (rgbaMat, currentCenters [c].point, 4, red, 5);
+							Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
 							Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 1, red, 1);
 							break;
 						case 1:
-							Imgproc.circle (rgbaMat, currentCenters [c].point, 4, green, 5);
+							Imgproc.circle (rgbaMat, currentCenters [c].point, 3, green, 5);
 							Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 1, green, 1);
 							break;
 						case 2:
-							Imgproc.circle (rgbaMat, currentCenters [c].point, 4, blue, 5);
+							Imgproc.circle (rgbaMat, currentCenters [c].point, 3, blue, 5);
 							Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 1, blue, 1);
 							break;
 						default:
-							Imgproc.circle (rgbaMat, currentCenters [c].point, 4, red, 5);
+							Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
 							Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 1, red, 1);
 							break;
 						}
@@ -497,19 +497,19 @@ namespace OpenCVForUnityExample
 					for (int c = 0; c < displayCenters.Count; c++) {
 						switch (c) {
 						case 0:
-							Imgproc.circle (rgbaMat, displayCenters [c].point, 4, red, 5);
+							Imgproc.circle (rgbaMat, displayCenters [c].point, 3, red, 5);
 							Imgproc.putText (rgbaMat, "  red", displayCenters [c].point, 2, 1, red, 1);
 							break;
 						case 1:
-							Imgproc.circle (rgbaMat, displayCenters [c].point, 4, green, 5);
+							Imgproc.circle (rgbaMat, displayCenters [c].point, 3, green, 5);
 							Imgproc.putText (rgbaMat, "  green", displayCenters [c].point, 2, 1, green, 1);
 							break;
 						case 2:
-							Imgproc.circle (rgbaMat, displayCenters [c].point, 4, blue, 5);
+							Imgproc.circle (rgbaMat, displayCenters [c].point, 3, blue, 5);
 							Imgproc.putText (rgbaMat, "  blue", displayCenters [c].point, 2, 1, blue, 1);
 							break;
 						default:
-							Imgproc.circle (rgbaMat, displayCenters [c].point, 4, red, 5);
+							Imgproc.circle (rgbaMat, displayCenters [c].point, 3, red, 5);
 							Imgproc.putText (rgbaMat, "  default", displayCenters [c].point, 2, 1, red, 1);
 							break;
 						}
@@ -527,6 +527,7 @@ namespace OpenCVForUnityExample
 		public void SnapToCenters(){
 			if (frameCount >=0){
 				for (int q = 0; q < displayCenters.Count; q++) {
+					//channel center inside rect
 					if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
 					   && displayCenters [q].point.x <= (rgbaMat.width () / 2) + snapToCenterSize
 					   && displayCenters [q].point.y >= (rgbaMat.height () / 2) - snapToCenterSize
