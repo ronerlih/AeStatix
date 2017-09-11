@@ -67,9 +67,9 @@ namespace OpenCVForUnityExample
 		List<Moments> moments = new List<Moments>();
 
 		//draw
-		Scalar red = new Scalar(200,50,50,255);
-		Scalar green = new Scalar(50,250,50,255);
-		Scalar blue = new Scalar(50,50,250,255);
+		 Scalar red = new Scalar(200,50,50,255);
+		 Scalar green = new Scalar(50,250,50,255);
+		 Scalar blue = new Scalar(50,50,250,255);
 
 		//edge
 		[Header("Edge")]
@@ -309,9 +309,9 @@ namespace OpenCVForUnityExample
 				} 
 				#endif
 				#endif
-
-					Debug.Log ("name " + webCamTexture.name + " width " + webCamTexture.width + " height " + webCamTexture.height + " fps " + webCamTexture.requestedFPS);
-					Debug.Log ("videoRotationAngle " + webCamTexture.videoRotationAngle + " videoVerticallyMirrored " + webCamTexture.videoVerticallyMirrored + " isFrongFacing " + webCamDevice.isFrontFacing);
+					webCamTexture.requestedFPS = 30;
+					Debug.Log ("Camera: (" + webCamTexture.width + "px," + webCamTexture.height + "px) " + webCamTexture.requestedFPS + "fps");
+					//Debug.Log ("videoRotationAngle " + webCamTexture.videoRotationAngle + " videoVerticallyMirrored " + webCamTexture.videoVerticallyMirrored + " isFrongFacing " + webCamDevice.isFrontFacing);
 
 					isInitWaiting = false;
 					hasInitDone = true;
@@ -444,7 +444,7 @@ namespace OpenCVForUnityExample
 						new Point ((int)Math.Round (rgbaMat.width () * (1- rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green,4);
 				}
 
-				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height (), new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar (255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
+				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "seconds", new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, green, 2, Imgproc.LINE_AA, false);
 				//draw centers
 				if (displaySpeed) {
 					checkForCentersData ();
@@ -492,9 +492,10 @@ namespace OpenCVForUnityExample
 						}
 					}
 				}
-				
-				//Imgproc.resize (locationMat, locationMat, new Size ( rgbaMat.width(),rgbaMat.height() ));
-				//Utils.matToTexture2D (locationMat, texture);
+
+				//ui
+				//Imgproc.putText (rgbaMat, secondsBtwProcessing + "Seconds btw analysis", new Point ((resizeSize.width /2 )+ 5f, 15f), 2, 0.7, green,2);
+
 				Utils.matToTexture2D (rgbaMat, texture, colors);
 
 				frameCount++;
@@ -506,7 +507,7 @@ namespace OpenCVForUnityExample
 				//initiate currentCenters
 				for (int d = 0; d < displayCenters.Count; d++) {
 						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
-					Debug.Log ("current centers: " + displayCenters [d]);
+					//Debug.Log ("current centers: " + displayCenters [d]);
 					}
 				}
 				// currentCenters step
@@ -711,32 +712,31 @@ namespace OpenCVForUnityExample
 				unityRect = new UnityEngine.Rect (5f, 5f, (float)resizeSize.width / 4, (float)resizeSize.height / 4);
 				GUImat = blackMat.clone ();
 				if (!loactionBias && !edgeBias) {
-					Utils.matToTexture2D (GUImat, locationTexture);
-					GUI.DrawTexture (unityRect, locationTexture);
 				}
 				if (loactionBias && !edgeBias && locationTexture != null) {
 					//GUImat = blackMat.clone ();
 				
 					Core.addWeighted (locationMat, locationWeight, blackMat, (1 - locationWeight), 0.0, GUImat);
 
-					Utils.matToTexture2D (GUImat, locationTexture);
-					GUI.DrawTexture (unityRect, locationTexture);
+
 					}
 				if (edgeBias && loactionBias) {
 					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
 					Core.addWeighted (locationMat, locationWeight, GUImat, (1 - locationWeight), 0.0, GUImat);
 
-					Utils.matToTexture2D (GUImat, locationTexture);
-					GUI.DrawTexture (unityRect, locationTexture);
+
 				}
 				if (!loactionBias && edgeBias) {
 					GUImat = grayMat.clone ();
 
 					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
 
-					Utils.matToTexture2D (GUImat, locationTexture);
-					GUI.DrawTexture (unityRect, locationTexture);
+				
 				}
+
+				Utils.matToTexture2D (GUImat, locationTexture);
+				GUI.DrawTexture (unityRect, locationTexture);
+
 			}
 
 		}

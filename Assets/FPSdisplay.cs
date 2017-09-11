@@ -1,11 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+
 public class FPSDisplay : MonoBehaviour
 {
 	float deltaTime = 0.0f;
 	[SerializeField]
-	Color color = new Color (66f/255f, 1.0f, 203f/255f);
+	Color color = new Color (50/255f, 250f/255f, 50f/255f);
 
 	void Update()
 	{
