@@ -135,6 +135,9 @@ namespace OpenCVForUnityExample
 		int snapToCenterSize = 50;
 		OpenCVForUnity.Rect snapToCenterRect;
 
+		//take photo
+		static int pauseFrames = 20;
+		int photoStartFrame = (0 - (pauseFrames + 1));
 		/////////////////////////////////
 
 		/// <summary>
@@ -199,6 +202,13 @@ namespace OpenCVForUnityExample
 
 		//copy mat GUI
 		Mat copyMat;
+
+		//photo mat
+		Mat photoMat;
+
+		//photo border mat
+		Mat photoWhiteMat;
+
 		//channels List
 		List<Mat> channels = new List<Mat>();
 
@@ -386,6 +396,14 @@ namespace OpenCVForUnityExample
 				GUImat.Dispose ();
 				GUImat = null;
 			}
+			if (photoMat != null) {
+				photoMat.Dispose ();
+				photoMat = null;
+			}
+			if (photoWhiteMat != null) {
+				photoWhiteMat.Dispose ();
+				photoWhiteMat = null;
+			}
 		}
 
 		/// <summary>
@@ -408,9 +426,11 @@ namespace OpenCVForUnityExample
 			Debug.Log ("analysis size: " + resizeSize.width + "px, " + resizeSize.height + "px");
 			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
 			whiteMat = new Mat(resizeSize, CvType.CV_8UC1, new Scalar(255));
+			photoWhiteMat = new Mat(webCamTexture.height,webCamTexture.width, CvType.CV_8UC3, new Scalar(255,255,255,255));
 			blackMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
 			copyMat = new Mat(resizeSize, CvType.CV_8UC3);
 			GUImat = new Mat( resizeSize, CvType.CV_8UC1);
+			photoMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 
 			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
 				new Point((int)Math.Round( locationMat.width() * (1- rationOfScreen)),(int)Math.Round( locationMat.height() * (1 - rationOfScreen))));
@@ -449,80 +469,92 @@ namespace OpenCVForUnityExample
 		void Update ()
 		{
 			if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame) {
-				Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
-				Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+				if (frameCount >= photoStartFrame + pauseFrames) {
 
-				//green LOCATION rect GUI
-				if (showCalcMats && loactionBias && drawRect) {
-					Imgproc.rectangle (rgbaMat, new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen)), 
-						new Point ((int)Math.Round (rgbaMat.width () * (1- rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green,4);
-				}
-				if (snapToCenter) {
-					//	snapToCenterRect = new OpenCVForUnity.Rect (rgbaMat.width / 2 - snapToCenterSize, rgbaMat.height / 2 - snapToCenterSize, rgbaMat.width / 2 + snapToCenterSize, rgbaMat.height / 2 + snapToCenterSize);
-					Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width() / 2) - snapToCenterSize, (rgbaMat.height() / 2) - snapToCenterSize), new Point ((rgbaMat.width() / 2) + snapToCenterSize, (rgbaMat.height() / 2) + snapToCenterSize), blue, 2);
-					Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), 0, 0.8, blue, 2);
-				}
-				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5 , 28), 0, 0.8, green, 2, Imgproc.LINE_AA, false);
-				//draw centers
-				if (displaySpeed) {
+					Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
+					Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+
+					//green LOCATION rect GUI
+					if (showCalcMats && loactionBias && drawRect) {
+						Imgproc.rectangle (rgbaMat, new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen)), 
+							new Point ((int)Math.Round (rgbaMat.width () * (1 - rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green, 4);
+					}
 					if (snapToCenter) {
-						SnapToCenters ();
+						//	snapToCenterRect = new OpenCVForUnity.Rect (rgbaMat.width / 2 - snapToCenterSize, rgbaMat.height / 2 - snapToCenterSize, rgbaMat.width / 2 + snapToCenterSize, rgbaMat.height / 2 + snapToCenterSize);
+						Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
+						Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), 0, 0.8, blue, 2);
 					}
-					checkForCentersData ();
-					centersFlag = true;
+					Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2, Imgproc.LINE_AA, false);
+					//draw centers
+					if (displaySpeed) {
+						if (snapToCenter) {
+							SnapToCenters ();
+						}
+						checkForCentersData ();
+						centersFlag = true;
 
-					for (int c = 0; c < currentCenters.Count; c++) {
-						switch (c) {
-						case 0:
-							Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
-							Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 1, red, 1);
-							break;
-						case 1:
-							Imgproc.circle (rgbaMat, currentCenters [c].point, 3, green, 5);
-							Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 1, green, 1);
-							break;
-						case 2:
-							Imgproc.circle (rgbaMat, currentCenters [c].point, 3, blue, 5);
-							Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 1, blue, 1);
-							break;
-						default:
-							Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
-							Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 1, red, 1);
-							break;
+						for (int c = 0; c < currentCenters.Count; c++) {
+							switch (c) {
+							case 0:
+								Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
+								Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 1, red, 1);
+								break;
+							case 1:
+								Imgproc.circle (rgbaMat, currentCenters [c].point, 3, green, 5);
+								Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 1, green, 1);
+								break;
+							case 2:
+								Imgproc.circle (rgbaMat, currentCenters [c].point, 3, blue, 5);
+								Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 1, blue, 1);
+								break;
+							default:
+								Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
+								Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 1, red, 1);
+								break;
+							}
+						}
+					} else {
+						centersFlag = false;
+
+						for (int c = 0; c < displayCenters.Count; c++) {
+							switch (c) {
+							case 0:
+								Imgproc.circle (rgbaMat, displayCenters [c].point, 3, red, 5);
+								Imgproc.putText (rgbaMat, "  red", displayCenters [c].point, 2, 1, red, 1);
+								break;
+							case 1:
+								Imgproc.circle (rgbaMat, displayCenters [c].point, 3, green, 5);
+								Imgproc.putText (rgbaMat, "  green", displayCenters [c].point, 2, 1, green, 1);
+								break;
+							case 2:
+								Imgproc.circle (rgbaMat, displayCenters [c].point, 3, blue, 5);
+								Imgproc.putText (rgbaMat, "  blue", displayCenters [c].point, 2, 1, blue, 1);
+								break;
+							default:
+								Imgproc.circle (rgbaMat, displayCenters [c].point, 3, red, 5);
+								Imgproc.putText (rgbaMat, "  default", displayCenters [c].point, 2, 1, red, 1);
+								break;
+							}
 						}
 					}
+
+					//ui
+					//Imgproc.putText (rgbaMat, secondsBtwProcessing + "Seconds btw analysis", new Point ((resizeSize.width /2 )+ 5f, 15f), 2, 0.7, green,2);
+
+					Utils.matToTexture2D (rgbaMat, texture, colors);
+
 				} else {
-					centersFlag = false;
+					// photo border
+					photoWhiteMat.colRange(0,20).copyTo(rgbMat.colRange(0,20));
+					photoWhiteMat.colRange(photoWhiteMat.cols() -20 ,photoWhiteMat.cols()).copyTo(rgbMat.colRange(photoWhiteMat.cols() -20 ,photoWhiteMat.cols()));
+					photoWhiteMat.rowRange(0,20).copyTo(rgbMat.rowRange(0,20));
+					photoWhiteMat.rowRange(photoWhiteMat.rows() -20 ,photoWhiteMat.rows()).copyTo(rgbMat.rowRange(photoWhiteMat.rows() -20 ,photoWhiteMat.rows()));
 
-					for (int c = 0; c < displayCenters.Count; c++) {
-						switch (c) {
-						case 0:
-							Imgproc.circle (rgbaMat, displayCenters [c].point, 3, red, 5);
-							Imgproc.putText (rgbaMat, "  red", displayCenters [c].point, 2, 1, red, 1);
-							break;
-						case 1:
-							Imgproc.circle (rgbaMat, displayCenters [c].point, 3, green, 5);
-							Imgproc.putText (rgbaMat, "  green", displayCenters [c].point, 2, 1, green, 1);
-							break;
-						case 2:
-							Imgproc.circle (rgbaMat, displayCenters [c].point, 3, blue, 5);
-							Imgproc.putText (rgbaMat, "  blue", displayCenters [c].point, 2, 1, blue, 1);
-							break;
-						default:
-							Imgproc.circle (rgbaMat, displayCenters [c].point, 3, red, 5);
-							Imgproc.putText (rgbaMat, "  default", displayCenters [c].point, 2, 1, red, 1);
-							break;
-						}
-					}
+					Utils.matToTexture2D (rgbMat, texture, colors);
 				}
-
-				//ui
-				//Imgproc.putText (rgbaMat, secondsBtwProcessing + "Seconds btw analysis", new Point ((resizeSize.width /2 )+ 5f, 15f), 2, 0.7, green,2);
-
-				Utils.matToTexture2D (rgbaMat, texture, colors);
-
 				frameCount++;
 			}
+
 		}
 		public void SnapToCenters(){
 			if (frameCount >=0){
@@ -682,7 +714,26 @@ namespace OpenCVForUnityExample
 
 
 
+		public void takePhoto(){
+			Debug.Log ("TAKE PHOTO");
+			photoStartFrame = frameCount;
 
+			//TO-DO: PLAY audio
+
+			//write to singleton
+			ImageManager.instance.photo = texture;
+			//TO-DO: emmit event for Markus
+
+			//camera to Jpeg rgba to bgr
+			Imgproc.cvtColor (rgbaMat, photoMat, Imgproc.COLOR_RGBA2BGR);
+			//write image
+			Imgcodecs.imwrite ("Assets/snapshot-with-data.jpeg", photoMat);
+			Imgproc.cvtColor (rgbMat, photoMat, Imgproc.COLOR_RGB2BGR);
+			Imgcodecs.imwrite ("Assets/snapshot-photo.jpeg", photoMat);
+
+
+
+		}
 		/// <summary>
 		/// Raises the destroy event.
 		/// </summary>
@@ -777,6 +828,7 @@ namespace OpenCVForUnityExample
 			}
 
 		}
+
 
 	}
 }
