@@ -136,7 +136,7 @@ namespace OpenCVForUnityExample
 		OpenCVForUnity.Rect snapToCenterRect;
 
 		//take photo
-		static int pauseFrames = 20;
+		static int pauseFrames = 12;
 		int photoStartFrame = (0 - (pauseFrames + 1));
 		/////////////////////////////////
 
@@ -719,7 +719,8 @@ namespace OpenCVForUnityExample
 			photoStartFrame = frameCount;
 
 			//TO-DO: PLAY audio
-
+			AudioSource audio = GetComponent<AudioSource>();		
+			audio.Play ();
 			//write to singleton
 			ImageManager.instance.photo = texture;
 			//TO-DO: emmit event for Markus
