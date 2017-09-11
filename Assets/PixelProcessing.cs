@@ -50,6 +50,7 @@ namespace OpenCVForUnityExample
 		[SerializeField]
 		[Range(0.8f,1f)]
 		float speed = 0.1f;
+		bool centersFlag = false;
 		[Space(10)]
 
 
@@ -447,7 +448,7 @@ namespace OpenCVForUnityExample
 				//draw centers
 				if (displaySpeed) {
 					checkForCentersData ();
-				
+					centersFlag = true;
 					for (int c = 0; c < currentCenters.Count; c++) {
 						switch (c) {
 						case 0:
@@ -469,7 +470,7 @@ namespace OpenCVForUnityExample
 						}
 					}
 				} else {
-
+					centersFlag = false;
 					for (int c = 0; c < displayCenters.Count; c++) {
 						switch (c) {
 						case 0:
@@ -500,7 +501,7 @@ namespace OpenCVForUnityExample
 			}
 		}
 		public void checkForCentersData(){
-			if (currentCenters.Count == 0 || frameCount <= 3) {
+			if (displayCenters!= null && currentCenters.Count == 0 || frameCount <= 4 || !centersFlag) {
 				currentCenters.Clear ();
 				//initiate currentCenters
 				for (int d = 0; d < displayCenters.Count; d++) {
@@ -704,7 +705,7 @@ namespace OpenCVForUnityExample
 			return b1 + (s-a1)*(b2-b1)/(a2-a1);
 		}
 		void OnGUI(){
-			if (showCalcMats && frameCount >= 5) {
+			if (showCalcMats && frameCount >= 10) {
 				
 				//only black rect
 				unityRect = new UnityEngine.Rect (5f, 5f, (float)resizeSize.width / 4, (float)resizeSize.height / 4);
