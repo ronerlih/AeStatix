@@ -4,23 +4,20 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Unity WebGL Player | AeStatix</title>
+    <link rel="stylesheet" href="TemplateData/style.css">
     <link rel="shortcut icon" href="TemplateData/favicon.ico" />
-		<style>
-		body{color:cornflowerblue;}
-		</style>
     <script src="TemplateData/UnityProgress.js"></script>
   </head>
   <body class="template">
-	<center>
-	<p>::developemnt::</p>
-    <p >AeStatix | webGL </p><br><br>
+    <p class="header"><span>Unity WebGL Player | </span>AeStatix</p>
     <div class="template-wrap clear">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" height="540px" width="960px"></canvas>
       <br>
+      <div class="logo"></div>
       <div class="fullscreen"><img src="TemplateData/fullscreen.png" width="38" height="38" alt="Fullscreen" title="Fullscreen" onclick="SetFullscreen(1);" /></div>
-      <div class="title">fullscreen</div>
+      <div class="title">AeStatix</div>
     </div>
-    
+    <p class="footer">&laquo; created with <a href="http://unity3d.com/" title="Go to unity3d.com">Unity</a> &raquo;</p>
     <script type='text/javascript'>
   var Module = {
     TOTAL_MEMORY: 268435456,
@@ -33,6 +30,6 @@
   };
 </script>
 <script src="Release/UnityLoader.js"></script>
-</center>
+
   </body>
 </html>

@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 #endif
 using OpenCVForUnity;
 
-namespace OpenCVForUnityExample
+namespace AeStatix
 {	
 	public class Centers{
 		public int name{ get; set;}
@@ -41,7 +41,7 @@ namespace OpenCVForUnityExample
 		[Range(0.01f,1f)]
 		float resizeFactor = 1f;
 		[SerializeField]
-		[Range(1f,3f)]
+		[Range(1f,5f)]
 		float exaggerateData = 1;
 		Size resizeSize;
 		[SerializeField]
@@ -130,6 +130,9 @@ namespace OpenCVForUnityExample
 		//snap to center
 		[SerializeField]
 		bool snapToCenter = false;
+		[SerializeField]
+		bool snapToCenterShowRect = true;
+
 		[SerializeField]
 		[Range(1,300)]
 		int snapToCenterSize = 50;
@@ -479,8 +482,7 @@ namespace OpenCVForUnityExample
 						Imgproc.rectangle (rgbaMat, new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen)), 
 							new Point ((int)Math.Round (rgbaMat.width () * (1 - rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green, 4);
 					}
-					if (snapToCenter) {
-						//	snapToCenterRect = new OpenCVForUnity.Rect (rgbaMat.width / 2 - snapToCenterSize, rgbaMat.height / 2 - snapToCenterSize, rgbaMat.width / 2 + snapToCenterSize, rgbaMat.height / 2 + snapToCenterSize);
+					if (snapToCenterShowRect) {
 						Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
 						Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), 0, 0.8, blue, 2);
 					}
@@ -749,9 +751,9 @@ namespace OpenCVForUnityExample
 		public void OnBackButtonClick ()
 		{
 			#if UNITY_5_3 || UNITY_5_3_OR_NEWER
-			SceneManager.LoadScene ("OpenCVForUnityExample");
+			SceneManager.LoadScene ("AeStatix");
 			#else
-			Application.LoadLevel ("OpenCVForUnityExample");
+			Application.LoadLevel ("AeStatix");
 			#endif
 		}
 
