@@ -46,12 +46,9 @@ namespace OpenCVForUnityExample
 		float exaggerateData = 1;
 		Size resizeSize;
 		[SerializeField]
-		[Range(1,50)]
-		int centersMaxStep = 1;
-		[SerializeField]
 		bool displaySpeed = false;
 		[SerializeField]
-		[Range(0.9f,1f)]
+		[Range(0.8f,1f)]
 		float speed = 0.1f;
 		[Space(10)]
 
@@ -77,6 +74,8 @@ namespace OpenCVForUnityExample
 		[Header("Edge")]
 		[SerializeField]
 		bool edgeBias = false;
+		[SerializeField]
+		bool thresh = true;
 		[SerializeField]
 		[Range(0,255)]
 		double edgeThreshold = 60;
@@ -187,6 +186,9 @@ namespace OpenCVForUnityExample
 
 		//submat
 		Mat submat;
+
+		//copy mat GUI
+		Mat copyMat;
 		//channels List
 		List<Mat> channels = new List<Mat>();
 
@@ -366,6 +368,10 @@ namespace OpenCVForUnityExample
 				submat.Dispose ();
 				submat = null;
 			}
+			if (copyMat != null) {
+				copyMat.Dispose ();
+				copyMat = null;
+			}
 		}
 
 		/// <summary>
@@ -388,6 +394,7 @@ namespace OpenCVForUnityExample
 			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
 			whiteMat = new Mat(resizeSize, CvType.CV_8UC1, new Scalar(255));
 			blackMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
+			copyMat = new Mat(resizeSize, CvType.CV_8UC3);
 			GUImat = new Mat( resizeSize, CvType.CV_8UC1);
 
 			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
@@ -495,32 +502,16 @@ namespace OpenCVForUnityExample
 		public void checkForCentersData(){
 			if (currentCenters.Count == 0 || frameCount <= 3) {
 				currentCenters.Clear ();
-
+				//initiate currentCenters
 				for (int d = 0; d < displayCenters.Count; d++) {
 						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
 					Debug.Log ("current centers: " + displayCenters [d]);
 					}
 				}
-				//currentCenters
-			for (int h = 0; h < displayCenters.Count; h++) {
+				// currentCenters step
+				for (int h = 0; h < displayCenters.Count; h++) {
 				currentCenters [h].point.x = speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed);
 				currentCenters [h].point.y = speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed);
-//				//x net data is larger
-//				if (_centers [h].point.x > currentCenters [h].point.x) {
-//					currentCenters [h].point.x += centersMaxStep;
-//				}
-//				//x new data is smaller
-//				if (_centers [h].point.x < currentCenters [h].point.x) {
-//					currentCenters [h].point.x -= centersMaxStep;
-//				}
-//				//y new data is larger
-//				if (_centers [h].point.y > currentCenters [h].point.y) {
-//					currentCenters [h].point.y += centersMaxStep;
-//				}
-//				//y new data is smaller
-//				if (_centers [h].point.y < currentCenters [h].point.y) {
-//					currentCenters [h].point.y -= centersMaxStep;
-//				}
 			}
 		}
 
@@ -539,7 +530,9 @@ namespace OpenCVForUnityExample
 					if(edgeBias){
 						grayMat = resizeMat.clone ();
 						Imgproc.cvtColor( grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+						if(thresh){
 						Imgproc.threshold ( grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY_INV );
+						}
 						Imgproc.Canny (grayMat, grayMat, edgeThreshold, edgeThreshold);
 						Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
 
@@ -729,7 +722,6 @@ namespace OpenCVForUnityExample
 					GUI.DrawTexture (unityRect, locationTexture);
 					}
 				if (edgeBias && loactionBias) {
-
 					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
 					Core.addWeighted (locationMat, locationWeight, GUImat, (1 - locationWeight), 0.0, GUImat);
 
@@ -737,8 +729,7 @@ namespace OpenCVForUnityExample
 					GUI.DrawTexture (unityRect, locationTexture);
 				}
 				if (!loactionBias && edgeBias) {
-					
-					//GUImat = blackMat.clone ();
+					GUImat = grayMat.clone ();
 
 					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
 
