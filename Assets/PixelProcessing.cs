@@ -493,7 +493,9 @@ namespace OpenCVForUnityExample
 			}
 		}
 		public void checkForCentersData(){
-			if (currentCenters.Count == 0 || frameCount == 0) {
+			if (currentCenters.Count == 0 || frameCount <= 3) {
+				currentCenters.Clear ();
+
 				for (int d = 0; d < displayCenters.Count; d++) {
 						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
 					Debug.Log ("current centers: " + displayCenters [d]);
@@ -709,34 +711,34 @@ namespace OpenCVForUnityExample
 			return b1 + (s-a1)*(b2-b1)/(a2-a1);
 		}
 		void OnGUI(){
-			if (showCalcMats && frameCount >= 10) {
+			if (showCalcMats && frameCount >= 5) {
 				
 				//only black rect
-
+				unityRect = new UnityEngine.Rect (5f, 5f, (float)resizeSize.width / 4, (float)resizeSize.height / 4);
+				GUImat = blackMat.clone ();
 				if (!loactionBias && !edgeBias) {
-					unityRect = new UnityEngine.Rect (5f, 5f, (float)resizeSize.width / 4, (float)resizeSize.height / 4);
-					GUImat = blackMat.clone ();
 					Utils.matToTexture2D (GUImat, locationTexture);
 					GUI.DrawTexture (unityRect, locationTexture);
 				}
-				if (loactionBias && locationTexture != null) {
-					GUImat = locationMat.clone ();
+				if (loactionBias && !edgeBias && locationTexture != null) {
+					//GUImat = blackMat.clone ();
 				
-					if (edgeBias) {
-						Core.addWeighted (grayMat, (edgeWeight), blackMat, (1 - edgeWeight), edgeGamma, grayMat);
-						Core.addWeighted (locationMat, locationWeight, grayMat, (1 - locationWeight), 0.0, GUImat);
-					} else {
-						Core.addWeighted (locationMat, locationWeight, blackMat, (1 - locationWeight), 0.0, GUImat);
+					Core.addWeighted (locationMat, locationWeight, blackMat, (1 - locationWeight), 0.0, GUImat);
 
+					Utils.matToTexture2D (GUImat, locationTexture);
+					GUI.DrawTexture (unityRect, locationTexture);
 					}
+				if (edgeBias && loactionBias) {
 
+					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
+					Core.addWeighted (locationMat, locationWeight, GUImat, (1 - locationWeight), 0.0, GUImat);
 
 					Utils.matToTexture2D (GUImat, locationTexture);
 					GUI.DrawTexture (unityRect, locationTexture);
 				}
-				if (edgeBias && !loactionBias) {
+				if (!loactionBias && edgeBias) {
 					
-					GUImat = blackMat.clone ();
+					//GUImat = blackMat.clone ();
 
 					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
 
