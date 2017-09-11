@@ -20,8 +20,7 @@ namespace OpenCVForUnityExample
 
 	}
 	/// <summary>
-	/// WebCamTexture to mat example.
-	/// An example of converting the WebCamTexture image to OpenCV's Mat format.
+	//AeStatix - real time image analysis and feedback
 	/// </summary>
 	public class PixelProcessing : MonoBehaviour
 	{
@@ -126,6 +125,16 @@ namespace OpenCVForUnityExample
 		[SerializeField]
 		[Range(0,1)]
 		float blueCoeficiente = 0;
+		[Space(10)]
+
+		//snap to center
+		[SerializeField]
+		bool snapToCenter = false;
+		[SerializeField]
+		[Range(1,300)]
+		int snapToCenterSize = 50;
+		OpenCVForUnity.Rect snapToCenterRect;
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -373,19 +382,24 @@ namespace OpenCVForUnityExample
 				copyMat.Dispose ();
 				copyMat = null;
 			}
+			if (GUImat != null) {
+				GUImat.Dispose ();
+				GUImat = null;
+			}
 		}
 
 		/// <summary>
 		/// Initialize completion handler of the webcam texture.
 		/// </summary>
 		private void OnInited ()
-		{
+		{	
+			//texture initiation
 			if (colors == null || colors.Length != webCamTexture.width * webCamTexture.height)
 				colors = new Color32[webCamTexture.width * webCamTexture.height];
 			if (texture == null || texture.width != webCamTexture.width || texture.height != webCamTexture.height)
 				texture = new Texture2D (webCamTexture.width, webCamTexture.height, TextureFormat.RGBA32, false);
 
-
+			//mats sizes and rects initiation
 			rgbaMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 				
@@ -443,12 +457,20 @@ namespace OpenCVForUnityExample
 					Imgproc.rectangle (rgbaMat, new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen)), 
 						new Point ((int)Math.Round (rgbaMat.width () * (1- rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green,4);
 				}
-
-				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "seconds", new Point (5, rgbaMat.rows () - 10), Core.FONT_HERSHEY_SIMPLEX, 1.0, green, 2, Imgproc.LINE_AA, false);
+				if (snapToCenter) {
+					//	snapToCenterRect = new OpenCVForUnity.Rect (rgbaMat.width / 2 - snapToCenterSize, rgbaMat.height / 2 - snapToCenterSize, rgbaMat.width / 2 + snapToCenterSize, rgbaMat.height / 2 + snapToCenterSize);
+					Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width() / 2) - snapToCenterSize, (rgbaMat.height() / 2) - snapToCenterSize), new Point ((rgbaMat.width() / 2) + snapToCenterSize, (rgbaMat.height() / 2) + snapToCenterSize), blue, 2);
+					Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), 0, 0.8, blue, 2);
+				}
+				Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "seconds", new Point (5 , 28), 0, 0.8, green, 2, Imgproc.LINE_AA, false);
 				//draw centers
 				if (displaySpeed) {
+					if (snapToCenter) {
+						SnapToCenters ();
+					}
 					checkForCentersData ();
 					centersFlag = true;
+
 					for (int c = 0; c < currentCenters.Count; c++) {
 						switch (c) {
 						case 0:
@@ -471,6 +493,7 @@ namespace OpenCVForUnityExample
 					}
 				} else {
 					centersFlag = false;
+
 					for (int c = 0; c < displayCenters.Count; c++) {
 						switch (c) {
 						case 0:
@@ -499,6 +522,19 @@ namespace OpenCVForUnityExample
 				Utils.matToTexture2D (rgbaMat, texture, colors);
 
 				frameCount++;
+			}
+		}
+		public void SnapToCenters(){
+			if (frameCount >=0){
+				for (int q = 0; q < displayCenters.Count; q++) {
+					if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
+					   && displayCenters [q].point.x <= (rgbaMat.width () / 2) + snapToCenterSize
+					   && displayCenters [q].point.y >= (rgbaMat.height () / 2) - snapToCenterSize
+					   && displayCenters [q].point.y <= (rgbaMat.height () / 2) + snapToCenterSize) {
+
+						displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
+					}
+				}
 			}
 		}
 		public void checkForCentersData(){
@@ -709,7 +745,7 @@ namespace OpenCVForUnityExample
 			if (showCalcMats && frameCount >= 10) {
 				
 				//only black rect
-				unityRect = new UnityEngine.Rect (5f, 5f, (float)resizeSize.width / 4, (float)resizeSize.height / 4);
+				unityRect = new UnityEngine.Rect (5f, 20f, (float)resizeSize.width /2, (float)resizeSize.height/2 );
 				GUImat = blackMat.clone ();
 				if (!loactionBias && !edgeBias) {
 				}
