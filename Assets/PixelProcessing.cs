@@ -29,7 +29,7 @@ namespace AeStatix
 		//show mats
 		[Header("Analysis")]
 		[SerializeField]
-		bool showCalcMats = false;
+		public bool showCalcMats = false;
 		int frameCount = 0;
 		[SerializeField]
 		//		[Range(1,100)]
@@ -129,7 +129,7 @@ namespace AeStatix
 
 		//snap to center
 		[SerializeField]
-		bool snapToCenter = false;
+		bool snapToCenter = true;
 		[SerializeField]
 		bool snapToCenterShowRect = true;
 
@@ -151,12 +151,12 @@ namespace AeStatix
 		/// <summary>
 		/// Set the requested width of the camera device.
 		/// </summary>
-		 int requestedWidth = 640;
+		 int requestedWidth = 960;
 
 		/// <summary>
 		/// Set the requested height of the camera device.
 		/// </summary>
-		 int requestedHeight = 480;
+		 int requestedHeight = 540;
 
 		/// <summary>
 		/// Set the requested to using the front camera.
@@ -244,6 +244,11 @@ namespace AeStatix
 		// Use this for initialization
 		void Start ()
 		{
+			//ui reset
+			loactionBias = false;
+			edgeBias = false;
+			individualColorCoeficients = false;
+
 			Initialize ();
 		}
 
@@ -355,6 +360,11 @@ namespace AeStatix
 			isInitWaiting = false;
 			hasInitDone = false;
 
+			//ui reset
+			loactionBias = false;
+			edgeBias = false;
+			individualColorCoeficients = false;
+
 			if (webCamTexture != null) {
 				webCamTexture.Stop ();
 				webCamTexture = null;
@@ -457,10 +467,14 @@ namespace AeStatix
 			float widthScale = (float)Screen.width / width;
 			float heightScale = (float)Screen.height / height;
 			//camera snap
-			if (widthScale > heightScale) {
-				Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) / 2;
+			if (widthScale < heightScale) {
+				Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) /2;
+				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
+
 			} else {
 				Camera.main.orthographicSize = height / 2;
+				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
+
 			}
 
 
@@ -743,6 +757,7 @@ namespace AeStatix
 		void OnDestroy ()
 		{
 			Dispose ();
+
 		}
 
 		/// <summary>
@@ -833,5 +848,16 @@ namespace AeStatix
 		}
 
 
+		public void showEdge(){
+			edgeBias = !edgeBias;
+		}
+		public void showCenter(){
+			loactionBias = !loactionBias;
+		}
+		public void showcolor(){
+			individualColorCoeficients = !individualColorCoeficients;
+		}
+
 	}
+
 }
