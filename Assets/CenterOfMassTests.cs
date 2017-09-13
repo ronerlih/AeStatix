@@ -3,38 +3,83 @@ using System.Collections;
 using System.Collections.Generic;
 using OpenCVForUnity;
 using System.IO;
+using System;
 
 public class CenterOfMassTests : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		//
-		List <Mat> folder = new List<Mat> ();
+
+		// moments
 		List <Moments> moments = new List<Moments> ();
 		Point pointMoments;
-		Scalar gray = new Scalar (120);
 
+		//display
+		Scalar gray = new Scalar (120);
+		Scalar darkGray = new Scalar (50);
+
+		//manual
+		double weightsSum=0;
+		double colsWeightedSum=0;
+		double rowsWeightedSum=0;
+		double manualX=0;
+		double manualY=0;
+
+		//IO
 		string inputPath = "/Users/ron/Desktop/AeStatic-unity/AeStatix/Assets/StreamingAssets/center-of-mass-tests/";
+		string outputPath = "/Users/ron/Desktop/AeStatic-unity/AeStatix/Assets/StreamingAssets/output/";
 		string[] fileNames = Directory.GetFiles (inputPath);
 
 		int fileCount = 0;
 		foreach (string fileName in fileNames) {
-			Mat inputMat = Imgcodecs.imread (fileName);
-			Imgproc.cvtColor (inputMat, inputMat, Imgproc.COLOR_BGR2GRAY);
+			if (Path.GetExtension (fileName).ToUpperInvariant() == ".JPG") {
+				Mat inputMat = Imgcodecs.imread (fileName);
+				Imgproc.cvtColor (inputMat, inputMat, Imgproc.COLOR_BGR2GRAY);
 
-			//get moments
-			moments.Add( Imgproc.moments(inputMat));
-			pointMoments = new Point ((moments [0].m10 / moments [0].m00), (moments [0].m01 / moments [0].m00));
-			Imgproc.circle (inputMat,pointMoments, 6, gray, 10);
-			Imgproc.putText (inputMat, "opencv center " + pointMoments, new Point ((moments [0].m10 / moments [0].m00), (moments [0].m01 / moments [0].m00) - 10), 1, 1, gray, 1);
-			//write file
-			Imgcodecs.imwrite ( inputPath + "output/" + fileCount + ".jpg", inputMat);
-			Debug.Log (inputPath + "output/" + fileCount + ".jpg");
+				//get moments
+				moments.Add (Imgproc.moments (inputMat));
+				pointMoments = new Point ((moments [0].m10 / moments [0].m00), (moments [0].m01 / moments [0].m00));
 
-			moments.Clear ();
-			fileCount++;
-				
+				//display
+				Imgproc.circle (inputMat, pointMoments, 6, gray, 10);
+				Imgproc.putText (inputMat, " opencv center " + pointMoments, new Point ((moments [0].m10 / moments [0].m00), (moments [0].m01 / moments [0].m00) - 10), 1, 1, gray, 2);
+
+				//maunal
+				for (int x = 0; x < inputMat.cols (); x++) {
+					for (int y = 0; y < inputMat.rows () ; y++) {
+						
+						double[] buff = inputMat.get (y, x);
+
+						weightsSum = weightsSum + buff [0] / 255;
+						colsWeightedSum = colsWeightedSum + x * (buff [0] / 255);
+						rowsWeightedSum = rowsWeightedSum + y * (buff [0] / 255);
+					}
+				}
+				//point
+				manualX = colsWeightedSum / weightsSum;
+				manualY = rowsWeightedSum / weightsSum;
+				Debug.Log (manualX + ", " + manualY);
+
+				//display
+				Imgproc.circle (inputMat, new Point (manualX, manualY), 2, darkGray, 5);
+				Imgproc.putText (inputMat, " manual center (" + manualX.ToString() + manualY.ToString() , new Point (manualX, manualY + 10), 1, 1, gray, 2);
+
+
+				//write file
+				Imgcodecs.imwrite (outputPath + fileCount + ".jpg", inputMat);
+				Debug.Log (outputPath + fileCount + ".jpg");
+
+				manualX = 0;
+				manualY = 0;
+				weightsSum = 0;
+				colsWeightedSum = 0;
+				rowsWeightedSum = 0;
+
+				moments.Clear ();
+				fileCount++;
+			}
 		}
+
 
 	}
 }

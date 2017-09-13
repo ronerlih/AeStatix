@@ -26,3 +26,8 @@
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Mono.Cecil.Mdb.dll
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Assembly-CSharp.dll
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Assembly-CSharp.dll.mdb
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEditor.iOS.Extensions.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEditor.iOS.Extensions.Common.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEditor.iOS.Extensions.Common.dll.mdb
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEditor.iOS.Extensions.Xcode.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEditor.iOS.Extensions.Xcode.dll.mdb
