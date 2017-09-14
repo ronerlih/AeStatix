@@ -228,8 +228,8 @@ namespace AeStatix
 		/// </summary>
 		Texture2D texture;
 
-		//location texture
-		Texture2D locationTexture;
+		//GUI texture
+		Texture2D GUItexture;
 
 		/// <summary>
 		/// Indicates whether this instance is waiting for initialization to complete.
@@ -430,10 +430,9 @@ namespace AeStatix
 			if (texture == null || texture.width != webCamTexture.width || texture.height != webCamTexture.height)
 				texture = new Texture2D (webCamTexture.width, webCamTexture.height, TextureFormat.RGBA32, false);
 
-			//mats sizes and rects initiation
+			//mats sizes initiation
 			rgbaMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
-				
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 			Debug.Log ("analysis size: " + resizeSize.width + "px, " + resizeSize.height + "px");
@@ -446,38 +445,35 @@ namespace AeStatix
 			grayMat = new Mat (resizeSize, CvType.CV_8UC1);
 			photoMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 
+			//assemble location Mat
 			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
 				new Point((int)Math.Round( locationMat.width() * (1- rationOfScreen)),(int)Math.Round( locationMat.height() * (1 - rationOfScreen))));
 			submat = new Mat (new Size(sub.width,sub.height), CvType.CV_8UC3, new Scalar (255, 255, 255));
-
 			submat.copyTo(locationMat.colRange((int)Math.Round (locationMat.width() * rationOfScreen), (int)Math.Round (locationMat.width() * (1 - rationOfScreen) ))
 				.rowRange((int)Math.Round (locationMat.height() * rationOfScreen), (int)Math.Round (locationMat.height() * (1 - rationOfScreen))));
 
-			if (locationTexture == null || locationTexture.width != resizeSize.width || locationTexture.height != resizeSize.height)
-				locationTexture = new Texture2D ((int)resizeSize.width, (int)resizeSize.height, TextureFormat.RGBA32, false);
+			//textures
+			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
+				GUItexture = new Texture2D ((int)resizeSize.width, (int)resizeSize.height, TextureFormat.RGBA32, false);
 			
-
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
 
 			gameObject.transform.localScale = new Vector3 (webCamTexture.width, webCamTexture.height, 1);
-			Debug.Log ("Screen.width " + Screen.width + " Screen.height " + Screen.height + " Screen.orientation " + Screen.orientation);
+			Debug.Log ("Screen size: (" + Screen.width + "px, " + Screen.height + "px) Screen.orientation " + Screen.orientation);
 
+			//camera position
 			float width = rgbaMat.width ();
 			float height = rgbaMat.height ();
-
 			float widthScale = (float)Screen.width / width;
 			float heightScale = (float)Screen.height / height;
-			//camera snap
+
 			if (widthScale < heightScale) {
 				Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) /2;
 				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
-
 			} else {
 				Camera.main.orthographicSize = height / 2;
 				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
-
 			}
-
 
 			//start processing
 			StartCoroutine(processFrame());
@@ -485,7 +481,8 @@ namespace AeStatix
 
 		// called once per frame
 		void Update ()
-		{
+		{	
+			//got a camera frame
 			if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame) {
 				if (frameCount >= photoStartFrame + pauseFrames) {
 
@@ -494,8 +491,10 @@ namespace AeStatix
 
 					//green LOCATION rect GUI
 					if (showCalcMats && loactionBias && drawRect) {
-						Imgproc.rectangle (rgbaMat, new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen)), 
-							new Point ((int)Math.Round (rgbaMat.width () * (1 - rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen))), green, 4);
+						Point locationPoint1 =  new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen));
+						Point locationPoint2 = new Point ((int)Math.Round (rgbaMat.width () * (1 - rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen)));
+						Imgproc.rectangle (rgbaMat,locationPoint1, locationPoint2, green, 2);
+						Imgproc.putText (rgbaMat, "location bias", locationPoint1, 0, 0.8, green, 2);
 					}
 					if (snapToCenterShowRect) {
 						Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
@@ -821,7 +820,7 @@ namespace AeStatix
 				if (!loactionBias && !edgeBias) {
 					GUImat = blackMat.clone ();
 					}
-				if (loactionBias && !edgeBias && locationTexture != null) {
+				if (loactionBias && !edgeBias && GUItexture != null) {
 					//GUImat = blackMat.clone ();
 				
 					Core.addWeighted (locationMat, locationWeight, blackMat, (1 - locationWeight), 0.0, GUImat);
@@ -841,8 +840,8 @@ namespace AeStatix
 
 				}
 
-				Utils.matToTexture2D (GUImat, locationTexture);
-				GUI.DrawTexture (unityRect, locationTexture);
+				Utils.matToTexture2D (GUImat, GUItexture);
+				GUI.DrawTexture (unityRect, GUItexture);
 
 			}
 
