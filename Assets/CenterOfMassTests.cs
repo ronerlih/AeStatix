@@ -56,7 +56,7 @@ public class CenterOfMassTests : MonoBehaviour {
 				Imgproc.putText (inputMat, " opencv center " + pointMoments, new Point ((moments [0].m10 / moments [0].m00), (moments [0].m01 / moments [0].m00) - 10), 1, 1, gray, 2);
 
 				//maunal
-				Debug.Log("file name: " + fileName + "\n");
+				Debug.Log("file name: " + fileName );
 				for (int x = 0; x < inputMat.cols () ; x++) {
 					for (int y = 0; y < inputMat.rows () ; y++) {
 						
@@ -86,8 +86,8 @@ public class CenterOfMassTests : MonoBehaviour {
 				//point
 				manualX = colsWeightedSum / weightsSum;
 				manualY = rowsWeightedSum / weightsSum;
-				Debug.Log ("manual point: (" + manualX + ", " + manualY + ")\n");
-				Debug.Log ("opencv point: (" + pointMoments.x + ", " + pointMoments.y + ")\n");
+				Debug.Log ("manual point: (" + manualX + ", " + manualY + ")");
+				Debug.Log ("opencv point: (" + pointMoments.x + ", " + pointMoments.y + ")");
 
 				//display
 				Imgproc.circle (inputMat, new Point (manualX, manualY), 2, darkGray, 5);
@@ -95,7 +95,7 @@ public class CenterOfMassTests : MonoBehaviour {
 
 				//write file
 				Imgcodecs.imwrite (outputPath + fileCount + ".jpg", inputMat);
-				Debug.Log (outputPath + fileCount + ".jpg\n");
+				Debug.Log (outputPath + fileCount + ".jpg");
 
 				manualX = 0;
 				manualY = 0;
