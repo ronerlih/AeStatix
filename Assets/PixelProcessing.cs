@@ -75,11 +75,6 @@ namespace AeStatix
 		[SerializeField]
 		bool edgeBias = false;
 		[SerializeField]
-		bool thresh = true;
-		[SerializeField]
-		[Range(0,255)]
-		double edgeThreshold = 60;
-		[SerializeField]
 		[Range(0,1)]
 		double 	edgeWeight = 0.5;
 		[SerializeField]
@@ -88,6 +83,11 @@ namespace AeStatix
 		[SerializeField]
 		[Range(0,100)]
 		double edgeGamma = 0;
+//		[SerializeField]
+		bool thresh = true;
+//		[SerializeField]
+//		[Range(0,255)]
+		double edgeThreshold = 60;
 
 
 
@@ -505,9 +505,9 @@ namespace AeStatix
 					}
 					if (snapToCenterShowRect) {
 						Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
-						Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), 0, 0.8, blue, 2);
+						Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize - 5), 0, 0.8, blue, 2);
 					}
-					Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2, Imgproc.LINE_AA, false);
+					Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2);
 					//draw centers
 					if (displaySpeed) {
 						if (snapToCenter) {
@@ -823,10 +823,10 @@ namespace AeStatix
 				
 				//only black rect
 				unityRect = new UnityEngine.Rect (5f, 20f, (float)resizeSize.width /2, (float)resizeSize.height/2 );
-				GUImat = blackMat.clone ();
 
 				if (!loactionBias && !edgeBias) {
-				}
+					GUImat = blackMat.clone ();
+					}
 				if (loactionBias && !edgeBias && locationTexture != null) {
 					//GUImat = blackMat.clone ();
 				
