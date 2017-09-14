@@ -200,8 +200,6 @@ namespace AeStatix
 		//resize mat
 		Mat GUImat;
 
-		//edge GUI mat
-		Mat edgeGUImat;
 		//submat
 		Mat submat;
 
@@ -419,10 +417,6 @@ namespace AeStatix
 				photoWhiteMat.Dispose ();
 				photoWhiteMat = null;
 			}
-			if (edgeGUImat != null) {
-				edgeGUImat.Dispose ();
-				edgeGUImat = null;
-			}
 		}
 
 		/// <summary>
@@ -449,7 +443,7 @@ namespace AeStatix
 			blackMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
 			copyMat = new Mat(resizeSize, CvType.CV_8UC3);
 			GUImat = new Mat( resizeSize, CvType.CV_8UC1);
-			edgeGUImat = new Mat( resizeSize, CvType.CV_8UC1);
+			grayMat = new Mat (resizeSize, CvType.CV_8UC1);
 			photoMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 
 			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
@@ -841,13 +835,10 @@ namespace AeStatix
 
 				}
 				if ( !loactionBias && edgeBias  ) {
-					
-					edgeGUImat = grayMat.clone ();
 
-					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, edgeGUImat);
+					GUImat = grayMat.clone ();
+					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
 
-					GUImat = edgeGUImat;
-				
 				}
 
 				Utils.matToTexture2D (GUImat, locationTexture);
