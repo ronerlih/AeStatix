@@ -16,7 +16,7 @@ public class CenterOfMassTests : MonoBehaviour {
 
 		//display
 		Scalar gray = new Scalar (120);
-		Scalar darkGray = new Scalar (50);
+		Scalar darkGray = new Scalar (90);
 
 		//manual
 		double weightsSum=0;
@@ -46,13 +46,28 @@ public class CenterOfMassTests : MonoBehaviour {
 
 				//maunal
 				for (int x = 0; x < inputMat.cols (); x++) {
-					for (int y = 0; y < inputMat.rows () ; y++) {
+					for (int y = 0; y < inputMat.rows (); y++) {
 						
 						double[] buff = inputMat.get (y, x);
 
-						weightsSum = weightsSum + buff [0] / 255;
-						colsWeightedSum = colsWeightedSum + x * (buff [0] / 255);
-						rowsWeightedSum = rowsWeightedSum + y * (buff [0] / 255);
+						weightsSum = weightsSum + buff [0];
+
+						//no correction
+//						colsWeightedSum = colsWeightedSum + (x) * (buff [0]);
+//						rowsWeightedSum = rowsWeightedSum + (y) * (buff [0]);
+
+						if (x != 0 && y != 0) {
+							colsWeightedSum = colsWeightedSum + (x) * (buff [0]);
+							rowsWeightedSum = rowsWeightedSum + (y) * (buff [0]);
+						} 
+						if (x == 0) {
+							colsWeightedSum = colsWeightedSum + (buff [0]);
+							rowsWeightedSum = rowsWeightedSum + (y) * (buff [0]);
+						}
+						if (y == 0) {
+							colsWeightedSum = colsWeightedSum + (x) * (buff [0]);
+							rowsWeightedSum = rowsWeightedSum +  (buff [0]);
+						}
 					}
 				}
 				//point
@@ -62,7 +77,7 @@ public class CenterOfMassTests : MonoBehaviour {
 
 				//display
 				Imgproc.circle (inputMat, new Point (manualX, manualY), 2, darkGray, 5);
-				Imgproc.putText (inputMat, " manual center (" + manualX.ToString() + manualY.ToString() , new Point (manualX, manualY + 10), 1, 1, gray, 2);
+				Imgproc.putText (inputMat, " manual center (" + manualX.ToString() + manualY.ToString() , new Point (manualX, manualY + 10), 1, 1, darkGray, 2);
 
 
 				//write file
