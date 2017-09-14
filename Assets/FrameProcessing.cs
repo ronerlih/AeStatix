@@ -34,10 +34,10 @@ namespace FrameProcessing
 		[Range(1,20)]
 		int blurSize = 3;
 
-		[SerializeField]
+		//[SerializeField]
 		bool toneThreshold = false;
-		[SerializeField]
-		[Range(0,255)]
+		//[SerializeField]
+		//[Range(0,255)]
 		double thresholdValue = 127.5f;
 		int thresholdValueCap =2;
 
@@ -47,12 +47,12 @@ namespace FrameProcessing
 
 		List<Moments> moments = new List<Moments>();
 
+		[Space(20)]
 		[SerializeField]
 		bool edge = false;
 		[SerializeField]
 		bool edgeCenterPoint = false;
 
-		[Space(20)]
 		[SerializeField]
 		bool blobs = false;
 
