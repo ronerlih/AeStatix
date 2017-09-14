@@ -31,6 +31,17 @@ public class CenterOfMassTests : MonoBehaviour {
 		string[] fileNames = Directory.GetFiles (inputPath);
 
 		int fileCount = 0;
+
+		//clean directory
+
+		DirectoryInfo directoryInfo = new DirectoryInfo(outputPath);
+
+		foreach (FileInfo file in directoryInfo.GetFiles())
+		{
+			file.Delete(); 
+		}
+
+		//TESTS:
 		foreach (string fileName in fileNames) {
 			if (Path.GetExtension (fileName).ToUpperInvariant() == ".JPG") {
 				Mat inputMat = Imgcodecs.imread (fileName);
@@ -77,8 +88,7 @@ public class CenterOfMassTests : MonoBehaviour {
 
 				//display
 				Imgproc.circle (inputMat, new Point (manualX, manualY), 2, darkGray, 5);
-				Imgproc.putText (inputMat, " manual center (" + manualX.ToString() + manualY.ToString() , new Point (manualX, manualY + 10), 1, 1, darkGray, 2);
-
+				Imgproc.putText (inputMat, " manual center (" + manualX.ToString() + ", " + manualY.ToString() , new Point (manualX, manualY + 10), 1, 1, darkGray, 2);
 
 				//write file
 				Imgcodecs.imwrite (outputPath + fileCount + ".jpg", inputMat);
