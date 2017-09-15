@@ -83,11 +83,14 @@ namespace AeStatix
 		[SerializeField]
 		[Range(0,100)]
 		double edgeGamma = 0;
-//		[SerializeField]
+		[SerializeField]
 		bool thresh = true;
-//		[SerializeField]
-//		[Range(0,255)]
-		double edgeThreshold = 60;
+		[SerializeField]
+		[Range(0,255)]
+		double edgeThreshold = 100;
+		[SerializeField]
+		[Range(0,255)]
+		double cannyThreshold = 100;
 
 
 
@@ -106,24 +109,22 @@ namespace AeStatix
 		UnityEngine.Rect unityRect;
 		[Space(10)]
 
-//		//pointSpeed
-//		[SerializeField]
-//		[Range(1,50)]
-//		int speed = 1;
-
-
 		//color coeficientes
 		[Header("Color")]
+		//weighted average
 		[SerializeField]
+		bool weightedAverage = false;
+// TO-DO: rgb co-ef module to remove
+//		[SerializeField]
 		bool individualColorCoeficients = false;
-		[SerializeField]
-		[Range(0,1)]
+//		[SerializeField]
+//		[Range(0,1)]
 		float redCoeficiente = 0;
-		[SerializeField]
-		[Range(0,1)]
+//		[SerializeField]
+//		[Range(0,1)]
 		float greenCoeficiente = 0;
-		[SerializeField]
-		[Range(0,1)]
+//		[SerializeField]
+//		[Range(0,1)]
 		float blueCoeficiente = 0;
 		[Space(10)]
 
@@ -141,6 +142,7 @@ namespace AeStatix
 		//take photo
 		static int pauseFrames = 12;
 		int photoStartFrame = (0 - (pauseFrames + 1));
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -503,9 +505,11 @@ namespace AeStatix
 					Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2);
 					//draw centers
 					if (displaySpeed) {
+
 						if (snapToCenter) {
 							SnapToCenters ();
 						}
+
 						checkForCentersData ();
 						centersFlag = true;
 
@@ -588,18 +592,25 @@ namespace AeStatix
 		}
 		public void checkForCentersData(){
 			if (displayCenters!= null && currentCenters.Count == 0 || frameCount <= 4 || !centersFlag) {
+
 				currentCenters.Clear ();
+
 				//initiate currentCenters
 				for (int d = 0; d < displayCenters.Count; d++) {
 						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
 					//Debug.Log ("current centers: " + displayCenters [d]);
 					}
 				}
+				
+			if (weightedAverage) {
+				
+			}
 				// currentCenters step
 				for (int h = 0; h < displayCenters.Count; h++) {
 				currentCenters [h].point.x = speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed);
 				currentCenters [h].point.y = speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed);
 			}
+
 		}
 
 		private IEnumerator processFrame(){
@@ -617,11 +628,13 @@ namespace AeStatix
 					if(edgeBias){
 						grayMat = resizeMat.clone ();
 						Imgproc.cvtColor( grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
-						if(thresh){
-						Imgproc.threshold ( grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY_INV );
-						}
-						Imgproc.Canny (grayMat, grayMat, edgeThreshold, edgeThreshold);
+
+						Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
 						Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
+						if(thresh){
+						Imgproc.threshold ( grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY );
+						}
+
 
 						//weights
 						Imgproc.cvtColor (grayMat,grayMat, Imgproc.COLOR_GRAY2RGB);
@@ -631,6 +644,7 @@ namespace AeStatix
 					}
 
 					if (loactionBias) {
+						//TO-DO: weighted average CHANGE + track bar################################
 						Core.addWeighted(resizeMat, (1 - locationWeight), locationMat, locationWeight , 0.0, resizeMat);
 					}
 
