@@ -153,7 +153,7 @@ namespace AeStatix
 		int triHight = 30;
 		int[] polyVertexCountTrack = new int[3];
 		int[] polyVertexCountBar = new int[3];
-		Scalar trackColor = new Scalar(255,255,255,255);
+		Scalar trackColor = new Scalar(0,0,0,255);
 		Scalar barColor = new Scalar(82,137,206,255);
 		int nContours = 3;
 
@@ -882,13 +882,9 @@ namespace AeStatix
 		}
 		public float TrackbarDiff(Point _current){
 			trackbarDiffFloat = (((float)(Math.Sqrt (((_current.x - ( frameWidth/2) ) * (_current.x - (frameWidth/2) )) + ((_current.y - (frameHeight/2) ) * (_current.y-(frameHeight/2) ))) )));
-//			if(trackbarDiffFloat < 0 )
-//				trackbarDiffFloat = 0;
-//			if(trackbarDiffFloat > 1 ) 
-//				trackbarDiffFloat = 1;
-			Debug.Log("distacnkc - float: " + trackbarDiffFloat);
-			Debug.Log("total distance: " + totalDistance);
-			if (trackbarDiffFloat > totalDistance)
+//			Debug.Log("distacnkc - float: " + trackbarDiffFloat);
+//			Debug.Log("total distance: " + totalDistance);
+			if (trackbarDiffFloat > totalDistance - 10)
 				trackbarDiffFloat = totalDistance;
 			if (trackbarDiffFloat < 10)
 				trackbarDiffFloat = 0;
