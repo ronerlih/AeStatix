@@ -45,7 +45,7 @@ namespace AeStatix
 		float exaggerateData = 1;
 		Size resizeSize;
 		[SerializeField]
-		bool displaySpeed = false;
+		bool displaySpeed = true;
 		[SerializeField]
 		[Range(0.8f,1f)]
 		float speed = 0.1f;
@@ -142,6 +142,32 @@ namespace AeStatix
 		//take photo
 		static int pauseFrames = 12;
 		int photoStartFrame = (0 - (pauseFrames + 1));
+
+		//trackbar
+		[SerializeField]
+		bool showTrackBar = true;
+
+		float precentageToCenter = 0.1f;
+		[SerializeField]
+		[Range(0,50)]
+		int triHight = 30;
+		int[] polyVertexCountTrack = new int[3];
+		int[] polyVertexCountBar = new int[3];
+		Scalar trackColor = new Scalar(255,255,255,255);
+		Scalar barColor = new Scalar(82,137,206,255);
+		int nContours = 3;
+
+		List<MatOfPoint> triangleTrack = new List<MatOfPoint>();
+		List<MatOfPoint> triangleBar = new List<MatOfPoint>();
+
+		MatOfPoint trackPoints = new MatOfPoint ();
+		MatOfPoint barPoints = new MatOfPoint ();
+		Point[] barPointsArray = new Point[3];
+		Point centerPoint;
+		float totalDistance;
+		float trackbarDiffFloat;
+		float frameWidth;
+		float frameHeight;
 
 		/////////////////////////////////
 
@@ -435,6 +461,8 @@ namespace AeStatix
 			//mats sizes initiation
 			rgbaMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			rgbMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
+			frameWidth = rgbMat.width ();
+			frameHeight = rgbMat.height ();
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 			Debug.Log ("analysis size: " + resizeSize.width + "px, " + resizeSize.height + "px");
@@ -462,6 +490,25 @@ namespace AeStatix
 
 			gameObject.transform.localScale = new Vector3 (webCamTexture.width, webCamTexture.height, 1);
 			Debug.Log ("Screen size: (" + Screen.width + "px, " + Screen.height + "px) Screen.orientation " + Screen.orientation);
+
+			//trackBar UI
+			Point centerPoint = new Point(rgbMat.width()/2,rgbMat.height()/2);
+			totalDistance =(float) Math.Sqrt(( (rgbMat.width()/2 ) * ( rgbMat.width()/2) ) + ( (rgbMat.height()/2) * (rgbMat.height()/2) )); 
+			Debug.Log("init total dis: " + totalDistance + "\n");
+			Point[] trackPointArray = new Point[3] {new Point (0, rgbMat.height()),
+				new Point (rgbMat.width(), rgbMat.height() - triHight),
+				new Point (rgbMat.width(), rgbMat.height())};
+			
+			Point bottomLeft = new Point (0, rgbMat.height());
+			Point topRight = bottomLeft;
+			Point bottomRight = bottomLeft;
+			barPointsArray = new Point[] {bottomLeft,topRight,bottomRight};
+
+			barPoints = new MatOfPoint (barPointsArray);
+			trackPoints = new MatOfPoint(trackPointArray);
+
+			triangleTrack.Add (trackPoints);
+			triangleBar.Add (barPoints);
 
 			//camera position
 			float width = rgbaMat.width ();
@@ -504,7 +551,6 @@ namespace AeStatix
 					}
 					Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2);
 					//draw centers
-					if (displaySpeed) {
 
 						if (snapToCenter) {
 							SnapToCenters ();
@@ -533,33 +579,14 @@ namespace AeStatix
 								break;
 							}
 						}
-					} else {
-						centersFlag = false;
 
-						for (int c = 0; c < displayCenters.Count; c++) {
-							switch (c) {
-							case 0:
-								Imgproc.circle (rgbaMat, displayCenters [c].point, 3, red, 5);
-								Imgproc.putText (rgbaMat, "  red", displayCenters [c].point, 2, 1, red, 1);
-								break;
-							case 1:
-								Imgproc.circle (rgbaMat, displayCenters [c].point, 3, green, 5);
-								Imgproc.putText (rgbaMat, "  green", displayCenters [c].point, 2, 1, green, 1);
-								break;
-							case 2:
-								Imgproc.circle (rgbaMat, displayCenters [c].point, 3, blue, 5);
-								Imgproc.putText (rgbaMat, "  blue", displayCenters [c].point, 2, 1, blue, 1);
-								break;
-							default:
-								Imgproc.circle (rgbaMat, displayCenters [c].point, 3, red, 5);
-								Imgproc.putText (rgbaMat, "  default", displayCenters [c].point, 2, 1, red, 1);
-								break;
-							}
-						}
+					//trackBar
+					if(showTrackBar){
+						Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
+						precentageToCenter = TrackbarDiff (currentCenters [0].point);
+						Imgproc.fillPoly (rgbaMat, TriangleBar(precentageToCenter), barColor, Imgproc.LINE_AA,0,new Point(0,0));
+
 					}
-
-					//ui
-					//Imgproc.putText (rgbaMat, secondsBtwProcessing + "Seconds btw analysis", new Point ((resizeSize.width /2 )+ 5f, 15f), 2, 0.7, green,2);
 
 					Utils.matToTexture2D (rgbaMat, texture, colors);
 
@@ -695,51 +722,6 @@ namespace AeStatix
 			centersObj.Add(new Centers(channel, point) );
 
 			return centersObj [channel];
-
-
-			//avaerage mean
-
-			//			Mat row_mean = new Mat(1,1, CvType.CV_8UC1 );
-			//			Mat col_mean = new Mat(1,1, CvType.CV_8UC1 );
-			//			//to-do: innitiate point onStart
-			//			Core.reduce (_mat,row_mean, 0, Core.REDUCE_AVG);
-			//			Core.reduce (_mat,col_mean, 1, Core.REDUCE_AVG);
-			//
-			//			Debug.Log ("row_mean: " + row_mean);
-			//			Debug.Log ("col_mean: " + col_mean);
-
-
-			///run through pixels
-			//
-			//			Byte[] buff = new Byte[1];
-			//			long xPos = 0;
-			//			long yPos = 0;
-			//			long zPos = 0;
-			//
-			//
-			//			for(int j = 0;j < _mat.rows(); j++){
-			////			     for memory address - to-do
-			////				 IntPtr _matJ = _mat.nativeObj;
-			//				 yPos += j;
-			//		 		 Debug.Log ("");
-			//				 for(int k = 0; k < _mat.cols(); k++){
-			//					_mat.get (k, j, buff);
-			//					//Debug.Log ("row number: " + j + "###" + Environment.NewLine + ", col number: "+ k + "### delta time: " + Time.deltaTime);
-			//					Debug.Log ("value: " + buff[0]);
-			//					xPos += k;
-			//					zPos += buff [0];
-			//
-			//				 }
-			//			}
-			//				
-			//
-			//			z =  (xPos / _mat.cols () + yPos / _mat.rows ()) / 255;
-			//			x = ((zPos / 255) + (yPos / _mat.rows ())) / _mat.cols ();
-			//			y = ((zPos / 255) + (xPos / _mat.cols ())) / _mat.rows ();
-			//
-			//			Debug.Log("x, y, z: " + x + ", " + y + ", " + z);
-			//			Debug.Log ("mat rows: " + _mat.rows ());
-			//			Debug.Log ("mat cols: " + _mat.cols ());
 		}
 
 
@@ -861,7 +843,7 @@ namespace AeStatix
 
 		}
 
-
+		//ui controls
 		public void showEdge(){
 			edgeBias = !edgeBias;
 		}
@@ -870,6 +852,50 @@ namespace AeStatix
 		}
 		public void showcolor(){
 			individualColorCoeficients = !individualColorCoeficients;
+		}
+		//calculate the trackbar bar
+		public List<MatOfPoint> TriangleBar(float _percentToCenter){
+			barPointsArray = new Point[]{ new Point (0, rgbMat.height()),
+				new Point (rgbaMat.width()  * _percentToCenter, (rgbaMat.height() - (triHight * _percentToCenter))),
+				new Point(rgbaMat.width()  * _percentToCenter, rgbMat.height())};
+			
+//			foreach (Point _point in barPointsArray) {
+//				Debug.Log ("point = " + _point);
+//			}
+
+			barPoints = new MatOfPoint(barPointsArray);
+
+			triangleBar.Clear ();
+			triangleBar.Add (barPoints);
+
+			return triangleBar;
+			//either wnough kto sync or clear and add array to mat and to list
+
+//			triangleBar.Clear ();
+//			triangleBar.Add
+//
+//
+//			= new List<MatOfPoint>( new Ma( 0, Screen.height ), 
+//				new Point( Screen.width * triHight * _percentToCenter, Screen.height - triHight * _percentToCenter ),
+//				new Point( Screen.width * triHight * _percentToCenter, Screen.height)
+//			);
+		}
+		public float TrackbarDiff(Point _current){
+			trackbarDiffFloat = (((float)(Math.Sqrt (((_current.x - ( frameWidth/2) ) * (_current.x - (frameWidth/2) )) + ((_current.y - (frameHeight/2) ) * (_current.y-(frameHeight/2) ))) )));
+//			if(trackbarDiffFloat < 0 )
+//				trackbarDiffFloat = 0;
+//			if(trackbarDiffFloat > 1 ) 
+//				trackbarDiffFloat = 1;
+			Debug.Log("distacnkc - float: " + trackbarDiffFloat);
+			Debug.Log("total distance: " + totalDistance);
+			if (trackbarDiffFloat > totalDistance)
+				trackbarDiffFloat = totalDistance;
+			if (trackbarDiffFloat < 10)
+				trackbarDiffFloat = 0;
+			
+			return (1 - trackbarDiffFloat/totalDistance);
+
+
 		}
 
 	}
