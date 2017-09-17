@@ -60,15 +60,18 @@ namespace AeStatix
 		List<Centers> centersObj = new List<Centers>();
 		List<Centers> displayCenters = new List<Centers>();
 		List<Centers> currentCenters = new List<Centers>();
+		Centers averageCenter;
 		// temp center point
 		Point point;
 		//moments array
 		List<Moments> moments = new List<Moments>();
 
 		//draw
-		 Scalar red = new Scalar(200,50,50,255);
-		 Scalar green = new Scalar(50,250,50,255);
-		 Scalar blue = new Scalar(50,50,250,255);
+		Scalar red = new Scalar(200,50,50,255);
+		Scalar green = new Scalar(50,250,50,255);
+		Scalar blue = new Scalar(50,50,250,255);
+		Scalar averageColor = new Scalar(123,123,204,255);
+
 
 		//edge
 		[Header("Edge")]
@@ -117,15 +120,15 @@ namespace AeStatix
 // TO-DO: rgb co-ef module to remove
 //		[SerializeField]
 		bool individualColorCoeficients = false;
-//		[SerializeField]
-//		[Range(0,1)]
-		float redCoeficiente = 0;
-//		[SerializeField]
-//		[Range(0,1)]
-		float greenCoeficiente = 0;
-//		[SerializeField]
-//		[Range(0,1)]
-		float blueCoeficiente = 0;
+		[SerializeField]
+		[Range(0.01f,1f)]
+		float redCoeficiente = 0.3f;
+		[SerializeField]
+		[Range(0.01f,1f)]
+		float greenCoeficiente = 0.3f;
+		[SerializeField]
+		[Range(0.01f,1f)]
+		float blueCoeficiente = 0.3f;
 		[Space(10)]
 
 		//snap to center
@@ -154,7 +157,7 @@ namespace AeStatix
 		int[] polyVertexCountTrack = new int[3];
 		int[] polyVertexCountBar = new int[3];
 		Scalar trackColor = new Scalar(0,0,0,255);
-		//Scalar barColor = new Scalar(82,137,206,255);
+		//background blue: // Scalar barColor = new Scalar(82,137,206,255);
 		Scalar barColor = new Scalar(255,255,255,255);
 		int nContours = 3;
 
@@ -276,7 +279,7 @@ namespace AeStatix
 			//ui reset
 			loactionBias = false;
 			edgeBias = false;
-			individualColorCoeficients = false;
+			weightedAverage = false;
 
 			Initialize ();
 		}
@@ -483,6 +486,9 @@ namespace AeStatix
 			submat.copyTo(locationMat.colRange((int)Math.Round (locationMat.width() * rationOfScreen), (int)Math.Round (locationMat.width() * (1 - rationOfScreen) ))
 				.rowRange((int)Math.Round (locationMat.height() * rationOfScreen), (int)Math.Round (locationMat.height() * (1 - rationOfScreen))));
 
+			//average center
+			averageCenter = new Centers (4,new Point(rgbMat.width()/2,rgbMat.height()/2));
+				
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
 				GUItexture = new Texture2D ((int)resizeSize.width, (int)resizeSize.height, TextureFormat.RGBA32, false);
@@ -495,11 +501,13 @@ namespace AeStatix
 			//trackBar UI
 			Point centerPoint = new Point(rgbMat.width()/2,rgbMat.height()/2);
 			totalDistance =(float) Math.Sqrt(( (rgbMat.width()/2 ) * ( rgbMat.width()/2) ) + ( (rgbMat.height()/2) * (rgbMat.height()/2) )); 
-			Debug.Log("init total dis: " + totalDistance + "\n");
-			Point[] trackPointArray = new Point[3] {new Point (0, rgbMat.height()),
+			Debug.Log("total distance from center (trackbar feedback): " + totalDistance + "px\n");
+			Point[] trackPointArray = new Point[3] {
+				new Point (0, rgbMat.height()),
 				new Point (rgbMat.width(), rgbMat.height() - triHight),
-				new Point (rgbMat.width(), rgbMat.height())};
-			
+				new Point (rgbMat.width(), rgbMat.height())
+			};
+			//bar points
 			Point bottomLeft = new Point (0, rgbMat.height());
 			Point topRight = bottomLeft;
 			Point bottomRight = bottomLeft;
@@ -553,13 +561,17 @@ namespace AeStatix
 					Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2);
 					//draw centers
 
-						if (snapToCenter) {
+					if (snapToCenter) {
 							SnapToCenters ();
-						}
+					}
 
-						checkForCentersData ();
-						centersFlag = true;
+					checkForCentersData ();
+					centersFlag = true;
 
+					if (weightedAverage) {
+						Imgproc.circle (rgbaMat, averageCenter.point, 3, averageColor, 5);
+						Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 1, averageColor, 1);
+					} else {
 						for (int c = 0; c < currentCenters.Count; c++) {
 							switch (c) {
 							case 0:
@@ -580,12 +592,13 @@ namespace AeStatix
 								break;
 							}
 						}
+					}
 
 					//trackBar
 					if(showTrackBar){
 						//Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
 						if (currentCenters [0] != null) {
-							precentageToCenter = TrackbarDiff (currentCenters [0].point);
+							precentageToCenter = TrackbarDiff (averageCenter.point);
 							Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), barColor, Imgproc.LINE_AA, 0, new Point (0, 0));
 						}
 					}
@@ -620,25 +633,23 @@ namespace AeStatix
 			}
 		}
 		public void checkForCentersData(){
+			//check for first tiem frame processing - Initiate centers - place in the center
 			if (displayCenters!= null && currentCenters.Count == 0 || frameCount <= 4 || !centersFlag) {
-
 				currentCenters.Clear ();
-
 				//initiate currentCenters
 				for (int d = 0; d < displayCenters.Count; d++) {
 						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
-					//Debug.Log ("current centers: " + displayCenters [d]);
 					}
-				}
-				
-			if (weightedAverage) {
-				
 			}
-				// currentCenters step
-				for (int h = 0; h < displayCenters.Count; h++) {
+				
+			// currentCenters step
+			for (int h = 0; h < displayCenters.Count; h++) {
 				currentCenters [h].point.x = speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed);
 				currentCenters [h].point.y = speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed);
 			}
+			//centers center - weighted average
+				averageCenter.point = WeightedAverageThree (currentCenters [0].point, currentCenters [1].point, currentCenters [2].point);
+				//Debug.Log ("average point: " + averageCenter.point);
 
 		}
 
@@ -853,7 +864,7 @@ namespace AeStatix
 			loactionBias = !loactionBias;
 		}
 		public void showcolor(){
-			individualColorCoeficients = !individualColorCoeficients;
+			weightedAverage = !weightedAverage;
 		}
 		//calculate the trackbar bar
 		public List<MatOfPoint> TriangleBar(float _percentToCenter){
@@ -873,27 +884,22 @@ namespace AeStatix
 			return triangleBar;
 			//either wnough kto sync or clear and add array to mat and to list
 
-//			triangleBar.Clear ();
-//			triangleBar.Add
-//
-//
-//			= new List<MatOfPoint>( new Ma( 0, Screen.height ), 
-//				new Point( Screen.width * triHight * _percentToCenter, Screen.height - triHight * _percentToCenter ),
-//				new Point( Screen.width * triHight * _percentToCenter, Screen.height)
-//			);
 		}
 		public float TrackbarDiff(Point _current){
-			trackbarDiffFloat = (((float)(Math.Sqrt (((_current.x - ( frameWidth/2) ) * (_current.x - (frameWidth/2) )) + ((_current.y - (frameHeight/2) ) * (_current.y-(frameHeight/2) ))) )));
-//			Debug.Log("distacnkc - float: " + trackbarDiffFloat);
-//			Debug.Log("total distance: " + totalDistance);
+
+			trackbarDiffFloat = (float)(Math.Sqrt ((
+				(_current.x - ( frameWidth/2) ) * (_current.x - (frameWidth/2) )) + ((_current.y - (frameHeight/2) ) * (_current.y-(frameHeight/2) ))) );
+
 			if (trackbarDiffFloat > totalDistance - 10)
 				trackbarDiffFloat = totalDistance;
 			if (trackbarDiffFloat < 10)
 				trackbarDiffFloat = 0;
-			
+
 			return (1 - trackbarDiffFloat/totalDistance);
-
-
+		}
+				public Point WeightedAverageThree(Point _redPoint, Point _greenPoint, Point _bluePoint){
+					return new Point( ((_redPoint.x * redCoeficiente) + (_greenPoint.x * greenCoeficiente) + (_bluePoint.x * blueCoeficiente)) / (redCoeficiente + greenCoeficiente + blueCoeficiente),
+						    		  ((_redPoint.y * redCoeficiente) + (_greenPoint.y * greenCoeficiente) + (_bluePoint.y * blueCoeficiente)) / (redCoeficiente + greenCoeficiente + blueCoeficiente));
 		}
 
 	}
