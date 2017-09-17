@@ -501,7 +501,7 @@ namespace AeStatix
 			//trackBar UI
 			Point centerPoint = new Point(rgbMat.width()/2,rgbMat.height()/2);
 			totalDistance =(float) Math.Sqrt(( (rgbMat.width()/2 ) * ( rgbMat.width()/2) ) + ( (rgbMat.height()/2) * (rgbMat.height()/2) )); 
-			Debug.Log("total distance from center (trackbar feedback): " + totalDistance + "px\n");
+			//Debug.Log("max distance from center (trackbar feedback): " + totalDistance + "px\n");
 			Point[] trackPointArray = new Point[3] {
 				new Point (0, rgbMat.height()),
 				new Point (rgbMat.width(), rgbMat.height() - triHight),
