@@ -149,12 +149,13 @@ namespace AeStatix
 
 		float precentageToCenter = 0.1f;
 		[SerializeField]
-		[Range(0,50)]
+		[Range(0,150)]
 		int triHight = 30;
 		int[] polyVertexCountTrack = new int[3];
 		int[] polyVertexCountBar = new int[3];
 		Scalar trackColor = new Scalar(0,0,0,255);
-		Scalar barColor = new Scalar(82,137,206,255);
+		//Scalar barColor = new Scalar(82,137,206,255);
+		Scalar barColor = new Scalar(255,255,255,255);
 		int nContours = 3;
 
 		List<MatOfPoint> triangleTrack = new List<MatOfPoint>();
@@ -582,10 +583,11 @@ namespace AeStatix
 
 					//trackBar
 					if(showTrackBar){
-						Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
-						precentageToCenter = TrackbarDiff (currentCenters [0].point);
-						Imgproc.fillPoly (rgbaMat, TriangleBar(precentageToCenter), barColor, Imgproc.LINE_AA,0,new Point(0,0));
-
+						//Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
+						if (currentCenters [0] != null) {
+							precentageToCenter = TrackbarDiff (currentCenters [0].point);
+							Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), barColor, Imgproc.LINE_AA, 0, new Point (0, 0));
+						}
 					}
 
 					Utils.matToTexture2D (rgbaMat, texture, colors);
