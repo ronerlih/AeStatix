@@ -1,9 +1,9 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2008
-
-Project("{D97F9956-D979-8C1B-F9AC-AA0134238B4B}") = "AeStatix", "Assembly-CSharp.csproj", "{54B49C33-EEFB-F386-F94E-A57B54272721}"
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeStatix", "Assembly-CSharp.csproj", "{54B49C33-EEFB-F386-F94E-A57B54272721}"
 EndProject
-Project("{D97F9956-D979-8C1B-F9AC-AA0134238B4B}") = "AeStatix", "Assembly-CSharp-Editor.csproj", "{EE2E8529-F1A5-0F0A-7779-03126D8C24A2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeStatix", "Assembly-CSharp-Editor.csproj", "{EE2E8529-F1A5-0F0A-7779-03126D8C24A2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

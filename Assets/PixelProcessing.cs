@@ -173,6 +173,10 @@ namespace AeStatix
 		float frameWidth;
 		float frameHeight;
 
+
+		//logic frame count
+		bool frameProcessingInit = false;
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -544,67 +548,73 @@ namespace AeStatix
 			if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame) {
 				if (frameCount >= photoStartFrame + pauseFrames) {
 
-					Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
-					Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+					if (frameProcessingInit) {
+						Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
+						Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
 
-					//green LOCATION rect GUI
-					if (showCalcMats && loactionBias && drawRect) {
-						Point locationPoint1 =  new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen));
-						Point locationPoint2 = new Point ((int)Math.Round (rgbaMat.width () * (1 - rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen)));
-						Imgproc.rectangle (rgbaMat,locationPoint1, locationPoint2, green, 2);
-						Imgproc.putText (rgbaMat, "location bias", locationPoint1, 0, 0.8, green, 2);
-					}
-					if (snapToCenterShowRect) {
-						Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
-						Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize - 5), 0, 0.8, blue, 2);
-					}
-					Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2);
-					//draw centers
+						//green LOCATION rect GUI
+						if (showCalcMats && loactionBias && drawRect) {
+							Point locationPoint1 = new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen));
+							Point locationPoint2 = new Point ((int)Math.Round (rgbaMat.width () * (1 - rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen)));
+							Imgproc.rectangle (rgbaMat, locationPoint1, locationPoint2, green, 2);
+							Imgproc.putText (rgbaMat, "location bias", locationPoint1, 0, 0.8, green, 2);
+						}
+						if (snapToCenterShowRect) {
+							Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
+							Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize - 5), 0, 0.8, blue, 2);
+						}
+						Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2);
+						//draw centers
 
-					if (snapToCenter) {
+						Debug.Log ("before snapToCenter");
+
+						if (snapToCenter) {
 							SnapToCenters ();
-					}
+						}
+						Debug.Log ("before checkForCentersData");
 
-					checkForCentersData ();
-					centersFlag = true;
+						checkForCentersData ();
+						centersFlag = true;
 
-					if (weightedAverage) {
-						Imgproc.circle (rgbaMat, averageCenter.point, 3, averageColor, 5);
-						Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 1, averageColor, 1);
-					} else {
-						for (int c = 0; c < currentCenters.Count; c++) {
-							switch (c) {
-							case 0:
-								Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
-								Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 1, red, 1);
-								break;
-							case 1:
-								Imgproc.circle (rgbaMat, currentCenters [c].point, 3, green, 5);
-								Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 1, green, 1);
-								break;
-							case 2:
-								Imgproc.circle (rgbaMat, currentCenters [c].point, 3, blue, 5);
-								Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 1, blue, 1);
-								break;
-							default:
-								Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
-								Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 1, red, 1);
-								break;
+						Debug.Log ("after checkForCentersData\n red center: " + currentCenters [0].point);
+
+						if (weightedAverage) {
+							Imgproc.circle (rgbaMat, averageCenter.point, 3, averageColor, 5);
+							Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 1, averageColor, 1);
+						} else {
+							for (int c = 0; c < currentCenters.Count; c++) {
+								switch (c) {
+								case 0:
+									Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
+									Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 1, red, 1);
+									break;
+								case 1:
+									Imgproc.circle (rgbaMat, currentCenters [c].point, 3, green, 5);
+									Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 1, green, 1);
+									break;
+								case 2:
+									Imgproc.circle (rgbaMat, currentCenters [c].point, 3, blue, 5);
+									Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 1, blue, 1);
+									break;
+								default:
+									Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
+									Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 1, red, 1);
+									break;
+								}
 							}
 						}
-					}
 
-					//trackBar
-					if(showTrackBar){
-						//Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
-						if (currentCenters [0] != null) {
-							precentageToCenter = TrackbarDiff (averageCenter.point);
-							Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), barColor, Imgproc.LINE_AA, 0, new Point (0, 0));
+						//trackBar
+						if (showTrackBar) {
+							//Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
+							if (currentCenters [0] != null) {
+								precentageToCenter = TrackbarDiff (averageCenter.point);
+								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), barColor, Imgproc.LINE_AA, 0, new Point (0, 0));
+							}
 						}
+
+						Utils.matToTexture2D (rgbaMat, texture, colors);
 					}
-
-					Utils.matToTexture2D (rgbaMat, texture, colors);
-
 				} else {
 					// photo border
 					photoWhiteMat.colRange(0,20).copyTo(rgbMat.colRange(0,20));
@@ -615,6 +625,8 @@ namespace AeStatix
 					Utils.matToTexture2D (rgbMat, texture, colors);
 				}
 				frameCount++;
+
+				Debug.Log ("frame no.: " + frameCount);
 			}
 
 		}
@@ -658,6 +670,8 @@ namespace AeStatix
 				//resize down
 				if (resizeMat != null) {
 					resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
+
+					frameProcessingInit = true;
 					//resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 					Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
 
@@ -705,25 +719,7 @@ namespace AeStatix
 
 		public Centers getCenterPointFromMat(Mat _mat, int channel){
 
-			//color coeficiencets
-			if (individualColorCoeficients) {
-				switch (channel) {
-				case 0:
-					Core.addWeighted (whiteMat, redCoeficiente, _mat, (1 - redCoeficiente),0.0, _mat);
-					break;
-				case 1:
-					Core.addWeighted (whiteMat, greenCoeficiente, _mat, (1 - greenCoeficiente), 0.0, _mat);
-					break;
-				case 2:
-					Core.addWeighted (whiteMat, blueCoeficiente, _mat, (1 - blueCoeficiente), 0.0, _mat);
-					break;
-				default:
-					Debug.Log ("DEFAULT switch state, unexpected channel");
-					break;
-
-				}
-			}
-
+		
 			// 3rd order moment center of mass
 			moments.Add(Imgproc.moments(_mat,false));
 			point = new Point ((moments [channel].m10 / moments [channel].m00), (moments [channel].m01 / moments [channel].m00));
