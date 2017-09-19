@@ -177,6 +177,8 @@ namespace AeStatix
 		//logic frame count
 		bool frameProcessingInit = false;
 
+
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -187,12 +189,12 @@ namespace AeStatix
 		/// <summary>
 		/// Set the requested width of the camera device.
 		/// </summary>
-		 int requestedWidth = 750;
+		 int requestedWidth = 1534;
 
 		/// <summary>
 		/// Set the requested height of the camera device.
 		/// </summary>
-		 int requestedHeight = 1334;
+		 int requestedHeight = 1050;
 
 		/// <summary>
 		/// Set the requested to using the front camera.
@@ -544,19 +546,29 @@ namespace AeStatix
 			triangleTrack.Add (trackPoints);
 			triangleBar.Add (barPoints);
 
+
+
 			//camera position
 			float width = rgbaMat.width ();
 			float height = rgbaMat.height ();
 			float widthScale = (float)Screen.width / width;
 			float heightScale = (float)Screen.height / height;
+			Quaternion baseRotation = Camera.main.transform.rotation;
+
+			Debug.Log ("base rotation" + baseRotation);
 
 			if (widthScale < heightScale) {
-				Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) /2;
-				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
+				Camera.main.transform.rotation = new Quaternion(0,0,1,1);
+				Camera.main.orthographicSize = (height * (float)Screen.height /(float)Screen.width) /2;
+				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z +10);
 			} else {
-				Camera.main.orthographicSize = height / 2;
-				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
+				//Camera.main.transform.rotation = baseRotation * Quaternion.AngleAxis(webCamTexture.videoRotationAngle, Vector3.left);
+
+				Camera.main.orthographicSize = width / 2;
+				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z +10);
 			}
+			//camera rotation
+			//
 
 			//start processing
 			StartCoroutine(processFrame());
@@ -566,7 +578,7 @@ namespace AeStatix
 		void Update ()
 		{	
 			//got a camera frame
-			if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame) {
+			if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame && webCamTexture.width > 100) {
 				if (frameCount >= photoStartFrame + pauseFrames) {
 
 					if (frameProcessingInit) {
@@ -689,7 +701,7 @@ namespace AeStatix
 		}
 
 		private IEnumerator processFrame(){
-			while (true) {
+			while (true && webCamTexture.width > 100) {
 				//resize down
 				if (resizeMat != null) {
 					resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
