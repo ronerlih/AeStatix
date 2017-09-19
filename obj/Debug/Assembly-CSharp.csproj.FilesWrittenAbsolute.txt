@@ -15,3 +15,8 @@
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Unity.CecilTools.dll
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Mono.Cecil.Pdb.dll
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/Mono.Cecil.Mdb.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEngine.TestRunner.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/nunit.framework.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEngine.Analytics.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEngine.HoloLens.dll
+/Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEngine.VR.dll
