@@ -187,12 +187,12 @@ namespace AeStatix
 		/// <summary>
 		/// Set the requested width of the camera device.
 		/// </summary>
-		 int requestedWidth = 960;
+		 int requestedWidth = 750;
 
 		/// <summary>
 		/// Set the requested height of the camera device.
 		/// </summary>
-		 int requestedHeight = 540;
+		 int requestedHeight = 1334;
 
 		/// <summary>
 		/// Set the requested to using the front camera.
@@ -330,8 +330,9 @@ namespace AeStatix
 			isInitWaiting = true;
 
 			if (!String.IsNullOrEmpty (requestedDeviceName)) {
-				//Debug.Log ("deviceName is "+requestedDeviceName);
+				Debug.Log ("deviceName is " + requestedDeviceName);
 				webCamTexture = new WebCamTexture (requestedDeviceName, requestedWidth, requestedHeight);
+			
 			} else {
 				//Debug.Log ("deviceName is null");
 				// Checks how many and which cameras are available on the device
@@ -356,6 +357,11 @@ namespace AeStatix
 				}
 			}
 
+			Debug.Log ("<unity> in camera initiation\n" +
+				"<unity> webCamTexture.videoRotationAngle: " + webCamTexture.videoRotationAngle +"\n" +
+				"<unity> name" + webCamTexture.deviceName + "\n" +
+				"<unity> webCamTexture.videoVerticallyMirrored: " + webCamTexture.videoVerticallyMirrored + "\n" +
+				"<unity> webCamTexture.wrapMode: " + 	webCamTexture.wrapMode );
 			// Starts the camera.
 			webCamTexture.Play ();
 
@@ -364,7 +370,7 @@ namespace AeStatix
 				#if UNITY_IOS && !UNITY_EDITOR && (UNITY_4_6_3 || UNITY_4_6_4 || UNITY_5_0_0 || UNITY_5_0_1)
 				if (webCamTexture.width > 16 && webCamTexture.height > 16) {
 				#else
-				if (webCamTexture.didUpdateThisFrame) {
+				if (webCamTexture.didUpdateThisFrame && webCamTexture.width > 100) {
 				#if UNITY_IOS && !UNITY_EDITOR && UNITY_5_2                                    
 				while (webCamTexture.width <= 16) {
 				webCamTexture.GetPixels32 ();
@@ -376,6 +382,8 @@ namespace AeStatix
 					Debug.Log ("<unity> Camera: (" + webCamTexture.width + "px," + webCamTexture.height + "px) " + webCamTexture.requestedFPS + "fps");
 					//Debug.Log ("videoRotationAngle " + webCamTexture.videoRotationAngle + " videoVerticallyMirrored " + webCamTexture.videoVerticallyMirrored + " isFrongFacing " + webCamDevice.isFrontFacing);
 
+					Debug.Log("<unity> bfr OnInitiated(), camera texture width" + webCamTexture.width );
+
 					isInitWaiting = false;
 					hasInitDone = true;
 
@@ -383,6 +391,7 @@ namespace AeStatix
 
 					break;
 				} else {
+					Debug.Log("<unity> yield, camera texture width: " + webCamTexture.width );
 					yield return 0;
 				}
 			}
@@ -578,16 +587,11 @@ namespace AeStatix
 						Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2);
 						//draw centers
 
-						Debug.Log ("<unity> before snapToCenter");
-
 						if (snapToCenter) {
 							SnapToCenters ();
 						}
-						Debug.Log ("<unity> before checkForCentersData");
 
 						checkForCentersData ();
-
-						Debug.Log ("<unity> after checkForCentersData\n <unity> red center: " + currentCenters [0].point);
 
 						if (weightedAverage) {
 							Imgproc.circle (rgbaMat, averageCenter.point, 3, averageColor, 5);
@@ -636,8 +640,6 @@ namespace AeStatix
 					Utils.matToTexture2D (rgbMat, texture, colors);
 				}
 				frameCount++;
-
-				Debug.Log ("<unity> frame no.: " + frameCount);
 			}
 
 		}
@@ -658,7 +660,6 @@ namespace AeStatix
 		public void checkForCentersData(){
 			//check for first tiem frame processing - Initiate centers - place in the center
 			if(displayCenters[0].point.x.ToString() == "NaN"){
-				Debug.Log ("<unity> inside displaceCenters initiation");
 				displayCenters.Clear ();
 				for (int o = 0; o <= 2; o++) {
 					displayCenters.Add (new Centers (o, new Point (0, 0)));
@@ -667,25 +668,18 @@ namespace AeStatix
 
 			if (displayCenters!= null && currentCenters.Count == 0 || !centersFlag) {
 				currentCenters.Clear ();
-				Debug.Log ("<unity> writting current centes, display count = " + displayCenters.Count + " display[0]: " + displayCenters[0].point);
 				//initiate currentCenters
 				for (int d = 0; d < displayCenters.Count; d++) {
 						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
 					}
-				Debug.Log ("<unity> after writting current centes, currentCenters count = " + currentCenters.Count+ " red: " + currentCenters[0].point);
 			}
 				
 			// currentCenters step
 			if (displayCenters.Count > 1) {
 				for (int h = 0; h < displayCenters.Count; h++) {
-					Debug.Log ("<unity> currentCenters [h].point.x: " + currentCenters [h].point.x + "\n" +
-					"<unity> speed: " + speed + "\n" +
-					"<unity> displayCenters [h].point.x: " + displayCenters [h].point.x);
-
 					currentCenters [h].point.x = speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed);
 					currentCenters [h].point.y = speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed);
 				}
-				Debug.Log ("<unity> after speed, currentCenters count = " + currentCenters.Count + " red: " + currentCenters [0].point);
 
 				//centers center - weighted average
 				averageCenter.point = WeightedAverageThree (currentCenters [0].point, currentCenters [1].point, currentCenters [2].point);

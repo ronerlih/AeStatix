@@ -196,11 +196,19 @@ namespace OpenCVForUnityExample
 
 			if (!String.IsNullOrEmpty (requestedDeviceName)) {
 				webCamTexture = new WebCamTexture (requestedDeviceName, requestedWidth, requestedHeight, requestedFPS);
+
+				//checking if camera initiated
+				if (webCamTexture.width < 100) {
+					webCamTexture = null;
+
+					Debug.Log ("nullified webcam");
+				}
+
+
 			} else {
 				// Checks how many and which cameras are available on the device
 				for (int cameraIndex = 0; cameraIndex < WebCamTexture.devices.Length; cameraIndex++) {
 					if (WebCamTexture.devices [cameraIndex].isFrontFacing == requestedIsFrontFacing) {
-
 						webCamDevice = WebCamTexture.devices [cameraIndex];
 						webCamTexture = new WebCamTexture (webCamDevice.name, requestedWidth, requestedHeight, requestedFPS);
 
