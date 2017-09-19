@@ -21,7 +21,8 @@ public class FPSDisplay : MonoBehaviour
 
 		Rect rect = new Rect(-5, 5, w, h * 2 / 50);
 		style.alignment = TextAnchor.UpperRight;
-		style.fontSize = h * 2 / 60;
+		style.fontSize = h * 2 / 80;
+		//style.fontStyle = FontStyle.Bold;
 		style.normal.textColor = color;
 
 

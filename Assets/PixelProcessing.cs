@@ -69,6 +69,7 @@ namespace AeStatix
 		//draw
 		Scalar red = new Scalar(200,50,50,255);
 		Scalar green = new Scalar(50,250,50,255);
+		Scalar UIgreen = new Scalar(168,221,168,255);
 		Scalar blue = new Scalar(50,50,250,255);
 		Scalar averageColor = new Scalar(123,123,204,255);
 
@@ -529,13 +530,13 @@ namespace AeStatix
 			totalDistance =(float) Math.Sqrt(( (rgbMat.width()/2 ) * ( rgbMat.width()/2) ) + ( (rgbMat.height()/2) * (rgbMat.height()/2) )); 
 			//Debug.Log("max distance from center (trackbar feedback): " + totalDistance + "px\n");
 			Point[] trackPointArray = new Point[3] {
-				new Point (0, rgbMat.height()),
-				new Point (rgbMat.width(), rgbMat.height() - triHight),
-				new Point (rgbMat.width(), rgbMat.height())
+				new Point (rgbMat.width(), rgbMat.height()),
+				new Point (rgbMat.width() - triHight, 0),
+				new Point (rgbMat.width(), 0)
 			};
 	
 			//bar points
-			Point bottomLeft = new Point (0, rgbMat.height());
+			Point bottomLeft = new Point (rgbMat.width(), rgbMat.height());
 			Point topRight = bottomLeft;
 			Point bottomRight = bottomLeft;
 			barPointsArray = new Point[] {bottomLeft,topRight,bottomRight};
@@ -554,8 +555,6 @@ namespace AeStatix
 			float widthScale = (float)Screen.width / width;
 			float heightScale = (float)Screen.height / height;
 			Quaternion baseRotation = Camera.main.transform.rotation;
-
-			Debug.Log ("base rotation" + baseRotation);
 
 			if (widthScale < heightScale) {
 				Camera.main.transform.rotation = new Quaternion(0,0,1,1);
@@ -596,7 +595,7 @@ namespace AeStatix
 							Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
 							Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize - 5), 0, 0.8, blue, 2);
 						}
-						Imgproc.putText (rgbaMat, "W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, 28), 0, 0.8, green, 2);
+						Imgproc.putText (rgbaMat, " W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, rgbaMat.height() - 20), 2, 1.5, UIgreen,2,Imgproc.LINE_AA,false);
 						//draw centers
 
 						if (snapToCenter) {
@@ -606,26 +605,26 @@ namespace AeStatix
 						checkForCentersData ();
 
 						if (weightedAverage) {
-							Imgproc.circle (rgbaMat, averageCenter.point, 3, averageColor, 5);
-							Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 1, averageColor, 1);
+							Imgproc.circle (rgbaMat, averageCenter.point, 8, averageColor, 13,Imgproc.LINE_AA,0);
+							//Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 2, averageColor, 2, Imgproc.LINE_AA, false);
 						} else {
 							for (int c = 0; c < currentCenters.Count; c++) {
 								switch (c) {
 								case 0:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
-									Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 1, red, 1);
+									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13,Imgproc.LINE_AA,0);
+								//	Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 2, red, 2,Imgproc.LINE_AA, false);
 									break;
 								case 1:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 3, green, 5);
-									Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 1, green, 1);
+									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, green, 13,Imgproc.LINE_AA,0);
+								//	Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 2, green, 2,Imgproc.LINE_AA, false);
 									break;
 								case 2:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 3, blue, 5);
-									Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 1, blue, 1);
+									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, blue, 13,Imgproc.LINE_AA,0);
+								//	Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 2, blue, 2,Imgproc.LINE_AA, false);
 									break;
 								default:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 3, red, 5);
-									Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 1, red, 1);
+									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13,Imgproc.LINE_AA,0);
+								//	Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 2, red, 2,Imgproc.LINE_AA, false);
 									break;
 								}
 							}
@@ -898,9 +897,9 @@ namespace AeStatix
 		}
 		//calculate the trackbar bar
 		public List<MatOfPoint> TriangleBar(float _percentToCenter){
-			barPointsArray = new Point[]{ new Point (0, rgbMat.height()),
-				new Point (rgbaMat.width()  * _percentToCenter, (rgbaMat.height() - (triHight * _percentToCenter))),
-				new Point(rgbaMat.width()  * _percentToCenter, rgbMat.height())};
+			barPointsArray = new Point[]{ new Point (rgbMat.width(), rgbMat.height()),
+				new Point (rgbaMat.width() - (triHight * _percentToCenter),rgbaMat.height()-( (rgbaMat.height() * _percentToCenter ))),
+				new Point(rgbaMat.width() , rgbaMat.height()-( (rgbaMat.height() * _percentToCenter )))};
 			
 //			foreach (Point _point in barPointsArray) {
 //				Debug.Log ("point = " + _point);
