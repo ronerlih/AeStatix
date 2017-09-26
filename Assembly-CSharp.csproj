@@ -176,6 +176,7 @@
      <Compile Include="Assets\Singelton.cs" />
      <Compile Include="Assets\WebCamTextureFaceDetection.cs" />
      <Compile Include="Assets\WebCamTextureToMatHelper.cs" />
+     <Compile Include="Assets\opencvPOC.cs" />
      <None Include="Assets\StreamingAssets\haarcascade_frontalface_alt.xml" />
      <None Include="Assets\OpenCVForUnity\OpenCV_LICENSE.txt" />
      <None Include="Assets\StreamingAssets\lbpcascade_frontalface.xml" />

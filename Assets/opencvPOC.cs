@@ -10,19 +10,11 @@ using OpenCVForUnity;
 
 namespace AeStatix
 {	
-	public class Centers{
-		public int name{ get; set;}
-		public Point point { get; set;}
-		public Centers(int Name, Point Point){
-			name = Name; //TO-DO: match int var to names of channels
-			point = Point;
-		}
-
-	}
+	
 	/// <summary>
 	//AeStatix - real time image analysis and feedback
 	/// </summary>
-	public class PixelProcessing : MonoBehaviour
+	public class opencvPOC : MonoBehaviour
 	{
 
 		//frame processing
@@ -44,8 +36,8 @@ namespace AeStatix
 		[Range(1f,5f)]
 		float exaggerateData = 1;
 		Size resizeSize;
-//		[SerializeField]
-//		bool displaySpeed = true;
+		//		[SerializeField]
+		//		bool displaySpeed = true;
 		[SerializeField]
 		[Range(0.8f,1f)]
 		float speed = 0.85f;
@@ -53,7 +45,7 @@ namespace AeStatix
 		[Space(10)]
 
 
-	
+
 
 		//centers
 		float x, y, z;
@@ -69,8 +61,6 @@ namespace AeStatix
 		//draw
 		Scalar red = new Scalar(200,50,50,255);
 		Scalar green = new Scalar(50,250,50,255);
-		Scalar crossColor = new Scalar(50,250,50,255);
-		Scalar guideColor = new Scalar(50,250,50,255);
 		Scalar UIgreen = new Scalar(168,221,168,255);
 		Scalar blue = new Scalar(50,50,250,255);
 		Scalar averageColor = new Scalar(123,123,204,255);
@@ -120,7 +110,9 @@ namespace AeStatix
 		//weighted average
 		[SerializeField]
 		bool weightedAverage = false;
-
+		// TO-DO: rgb co-ef module to remove
+		//		[SerializeField]
+		//bool individualColorCoeficients = false;
 		[SerializeField]
 		[Range(0.01f,1f)]
 		float redCoeficiente = 0.3f;
@@ -178,32 +170,38 @@ namespace AeStatix
 		//logic frame count
 		bool frameProcessingInit = false;
 
-		//ui cross
-		[SerializeField]
-		bool cross = true;
-		bool guide = true;
+		//flipui
+		Point flipCenter;
+		//[SerializeField]
+		Vector2 pivotPoint;
+		//[SerializeField]
+		[Range(0,360)]
+		int pivotAngle= 90;
+
+		//body contours
+		BackgroundSubtractorMOG2 bsMOG2;
 
 		/////////////////////////////////
 
 		/// <summary>
 		/// Set this to specify the name of the device to use.
 		/// </summary>
-		 string requestedDeviceName = null;
+		string requestedDeviceName = null;
 
 		/// <summary>
 		/// Set the requested width of the camera device.
 		/// </summary>
-		 int requestedWidth = 1534;
+		int requestedWidth = 1534;
 
 		/// <summary>
 		/// Set the requested height of the camera device.
 		/// </summary>
-		 int requestedHeight = 1050;
+		int requestedHeight = 1050;
 
 		/// <summary>
 		/// Set the requested to using the front camera.
 		/// </summary>
-		 bool requestedIsFrontFacing = false;
+		bool requestedIsFrontFacing = false;
 
 		/// <summary>
 		/// The webcam texture.
@@ -232,7 +230,7 @@ namespace AeStatix
 		Mat resizeMat;
 
 		//resize mat
-		Mat locationMat;
+		Mat subtractorMat;
 
 		//white mat
 		Mat whiteMat;
@@ -338,7 +336,7 @@ namespace AeStatix
 			if (!String.IsNullOrEmpty (requestedDeviceName)) {
 				Debug.Log ("deviceName is " + requestedDeviceName);
 				webCamTexture = new WebCamTexture (requestedDeviceName, requestedWidth, requestedHeight);
-			
+
 			} else {
 				//Debug.Log ("deviceName is null");
 				// Checks how many and which cameras are available on the device
@@ -440,9 +438,9 @@ namespace AeStatix
 				blackMat.Dispose ();
 				blackMat = null;
 			}
-			if (locationMat != null) {
-				locationMat.Dispose ();
-				locationMat = null;
+			if (subtractorMat != null) {
+				subtractorMat.Dispose ();
+				subtractorMat = null;
 			}
 			if (resizeMat != null) {
 				resizeMat.Dispose ();
@@ -489,25 +487,22 @@ namespace AeStatix
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 			Debug.Log ("<unity> analysis size: " + resizeSize.width + "px, " + resizeSize.height + "px");
-			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
+			subtractorMat = new Mat( resizeSize, CvType.CV_8UC3);
 			whiteMat = new Mat(resizeSize, CvType.CV_8UC1, new Scalar(255));
 			photoWhiteMat = new Mat(webCamTexture.height,webCamTexture.width, CvType.CV_8UC3, new Scalar(255,255,255,255));
 			blackMat = new Mat(resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
 			copyMat = new Mat(resizeSize, CvType.CV_8UC3);
-			GUImat = new Mat( resizeSize, CvType.CV_8UC1);
+			GUImat = new Mat( resizeSize, CvType.CV_8UC3);
 			grayMat = new Mat (resizeSize, CvType.CV_8UC1);
 			photoMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 
-			//assemble location Mat
-			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
-				new Point((int)Math.Round( locationMat.width() * (1- rationOfScreen)),(int)Math.Round( locationMat.height() * (1 - rationOfScreen))));
-			submat = new Mat (new Size(sub.width,sub.height), CvType.CV_8UC3, new Scalar (255, 255, 255));
-			submat.copyTo(locationMat.colRange((int)Math.Round (locationMat.width() * rationOfScreen), (int)Math.Round (locationMat.width() * (1 - rationOfScreen) ))
-				.rowRange((int)Math.Round (locationMat.height() * rationOfScreen), (int)Math.Round (locationMat.height() * (1 - rationOfScreen))));
+			//bg subtractor
+			//bsMOG2 = new BackgroundSubtractorMOG2(1,0,true);
+
 
 			//average center
 			averageCenter = new Centers (4,new Point(rgbMat.width()/2,rgbMat.height()/2));
-				
+
 			//centers init
 			displayCenters.Clear();
 			for(int c = 0; c<3 ; c++){
@@ -518,18 +513,20 @@ namespace AeStatix
 				displayCenters.Add (new Centers(c, new Point(rgbMat.width()/2,rgbMat.height()/2)));
 			}
 
-
+			//flipUI
+			flipCenter = new Point(0,0);
+			pivotPoint = new Vector2 ((float)resizeSize.height/3 - 22 ,(float)resizeSize.height/3  -12);
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
 				GUItexture = new Texture2D ((int)resizeSize.width, (int)resizeSize.height, TextureFormat.RGBA32, false);
-			
+
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
 
 			gameObject.transform.localScale = new Vector3 (webCamTexture.width, webCamTexture.height, 1);
 			Debug.Log ("<unity> Screen size: (" + Screen.width + "px, " + Screen.height + "px) Screen.orientation " + Screen.orientation);
 
 			//trackBar UI
-	//		Point centerPoint = new Point(rgbMat.width()/2,rgbMat.height()/2);
+			//		Point centerPoint = new Point(rgbMat.width()/2,rgbMat.height()/2);
 			totalDistance =(float) Math.Sqrt(( (rgbMat.width()/2 ) * ( rgbMat.width()/2) ) + ( (rgbMat.height()/2) * (rgbMat.height()/2) )); 
 			//Debug.Log("max distance from center (trackbar feedback): " + totalDistance + "px\n");
 			Point[] trackPointArray = new Point[3] {
@@ -537,7 +534,7 @@ namespace AeStatix
 				new Point (rgbMat.width() - triHight, 0),
 				new Point (rgbMat.width(), 0)
 			};
-	
+
 			//bar points
 			Point bottomLeft = new Point (rgbMat.width(), rgbMat.height());
 			Point topRight = bottomLeft;
@@ -581,139 +578,22 @@ namespace AeStatix
 		{	
 			//got a camera frame
 			if (hasInitDone && webCamTexture.isPlaying && webCamTexture.didUpdateThisFrame && webCamTexture.width > 100) {
-				if (frameCount >= photoStartFrame + pauseFrames) {
 
-					if (frameProcessingInit) {
-						Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
-						Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+				if (frameProcessingInit) {
+					Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
+					//clean reference Mat
+					Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
 
-						//green LOCATION rect GUI
-						if (showCalcMats && loactionBias && drawRect) {
-							Point locationPoint1 = new Point ((int)Math.Round (rgbaMat.width () * rationOfScreen), (int)Math.Round (rgbaMat.height () * rationOfScreen));
-							Point locationPoint2 = new Point ((int)Math.Round (rgbaMat.width () * (1 - rationOfScreen)), (int)Math.Round (rgbaMat.height () * (1 - rationOfScreen)));
-							Imgproc.rectangle (rgbaMat, locationPoint1, locationPoint2, green, 2);
-							Imgproc.putText (rgbaMat, "location bias", locationPoint1, 0, 0.8, green, 2);
-						}
-						if (snapToCenterShowRect) {
-							Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
-							Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize - 5), 0, 0.8, blue, 2);
-						}
-						Imgproc.putText (rgbaMat, " W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, rgbaMat.height() - 20), 2, 1.5, UIgreen,2,Imgproc.LINE_AA,false);
-						//draw centers
+					Imgproc.putText (rgbaMat, " W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, rgbaMat.height() - 20), 2, 1.5, UIgreen,2,Imgproc.LINE_AA,false);
 
-						if (snapToCenter) {
-							SnapToCenters ();
-						}
+					Utils.matToTexture2D (rgbaMat, texture, colors);
 
-						checkForCentersData ();
-
-						if (weightedAverage) {
-							Imgproc.circle (rgbaMat, averageCenter.point, 8, averageColor, 13,Imgproc.LINE_AA,0);
-							//Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 2, averageColor, 2, Imgproc.LINE_AA, false);
-						} else {
-							for (int c = 0; c < currentCenters.Count; c++) {
-								switch (c) {
-								case 0:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13,Imgproc.LINE_AA,0);
-								//	Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 2, red, 2,Imgproc.LINE_AA, false);
-									break;
-								case 1:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, green, 13,Imgproc.LINE_AA,0);
-								//	Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 2, green, 2,Imgproc.LINE_AA, false);
-									break;
-								case 2:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, blue, 13,Imgproc.LINE_AA,0);
-								//	Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 2, blue, 2,Imgproc.LINE_AA, false);
-									break;
-								default:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13,Imgproc.LINE_AA,0);
-								//	Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 2, red, 2,Imgproc.LINE_AA, false);
-									break;
-								}
-							}
-						}
-
-						//trackBar
-						if (showTrackBar) {
-							//Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
-							if (currentCenters [0] != null) {
-								precentageToCenter = TrackbarDiff (averageCenter.point);
-								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), barColor, Imgproc.LINE_AA, 0, new Point (0, 0));
-							}
-						}
-						if (cross) {
-							//TO-DO: new point 
-							Imgproc.circle (rgbaMat,new Point( frameWidth/2,frameHeight/2) , 30, crossColor, 2,Imgproc.LINE_AA,0);
-							Imgproc.line(rgbaMat, new Point( (frameWidth/2)- (frameWidth/20),(frameHeight/2)-(frameHeight/20)),new Point(frameWidth/2.5 , frameHeight/2.5),crossColor,2,Imgproc.LINE_AA,0);
-							Imgproc.line(rgbaMat, new Point( (frameWidth/2)- (frameWidth/20),(frameHeight/2)+(frameHeight/20)),new Point(frameWidth/2.5 , frameHeight - (frameHeight/2.5)),crossColor,2,Imgproc.LINE_AA,0);
-							Imgproc.line(rgbaMat, new Point( (frameWidth/2)+ (frameWidth/20),(frameHeight/2)+(frameHeight/20)),new Point(frameWidth- (frameWidth/2.5) , frameHeight - (frameHeight/2.5)),crossColor,2,Imgproc.LINE_AA,0);
-							Imgproc.line(rgbaMat, new Point( (frameWidth/2)+ (frameWidth/20),(frameHeight/2)-(frameHeight/20)),new Point(frameWidth- (frameWidth/2.5) , (frameHeight/2.5)),crossColor,2,Imgproc.LINE_AA,0);
-
-								
-
-						}
-						if (guide) {
-						}
-
-						Utils.matToTexture2D (rgbaMat, texture, colors);
-					}
-				} else {
-					// photo border
-					photoWhiteMat.colRange(0,20).copyTo(rgbMat.colRange(0,20));
-					photoWhiteMat.colRange(photoWhiteMat.cols() -20 ,photoWhiteMat.cols()).copyTo(rgbMat.colRange(photoWhiteMat.cols() -20 ,photoWhiteMat.cols()));
-					photoWhiteMat.rowRange(0,20).copyTo(rgbMat.rowRange(0,20));
-					photoWhiteMat.rowRange(photoWhiteMat.rows() -20 ,photoWhiteMat.rows()).copyTo(rgbMat.rowRange(photoWhiteMat.rows() -20 ,photoWhiteMat.rows()));
-
-					Utils.matToTexture2D (rgbMat, texture, colors);
+					frameCount++;
 				}
-				frameCount++;
 			}
 
 		}
-		public void SnapToCenters(){
-			if (frameCount >=0){
-				for (int q = 0; q < displayCenters.Count; q++) {
-					//channel center inside rect
-					if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
-					   && displayCenters [q].point.x <= (rgbaMat.width () / 2) + snapToCenterSize
-					   && displayCenters [q].point.y >= (rgbaMat.height () / 2) - snapToCenterSize
-					   && displayCenters [q].point.y <= (rgbaMat.height () / 2) + snapToCenterSize) {
 
-						displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
-					}
-				}
-			}
-		}
-		public void checkForCentersData(){
-			//check for first tiem frame processing - Initiate centers - place in the center
-			if(displayCenters[0].point.x.ToString() == "NaN"){
-				displayCenters.Clear ();
-				for (int o = 0; o <= 2; o++) {
-					displayCenters.Add (new Centers (o, new Point (0, 0)));
-				}
-			}
-
-			if (displayCenters!= null && currentCenters.Count == 0 || !centersFlag) {
-				currentCenters.Clear ();
-				//initiate currentCenters
-				for (int d = 0; d < displayCenters.Count; d++) {
-						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
-					}
-			}
-				
-			// currentCenters step
-			if (displayCenters.Count > 1) {
-				for (int h = 0; h < displayCenters.Count; h++) {
-					currentCenters [h].point.x = speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed);
-					currentCenters [h].point.y = speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed);
-				}
-
-				//centers center - weighted average
-				averageCenter.point = WeightedAverageThree (currentCenters [0].point, currentCenters [1].point, currentCenters [2].point);
-			}
-			centersFlag = true;
-
-		}
 
 		private IEnumerator processFrame(){
 			while (true && webCamTexture.width > 100) {
@@ -722,89 +602,32 @@ namespace AeStatix
 					resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 
 					frameProcessingInit = true;
-					//resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
+
 					Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+					bsMOG2.apply (resizeMat, resizeMat);
 
-					//edge detection and wights
-					if(edgeBias){
-						grayMat = resizeMat.clone ();
-						Imgproc.cvtColor( grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
-
-						Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
-						Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
-						if(thresh){
-						Imgproc.threshold ( grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY );
-						}
-
-
-						//weights
-						Imgproc.cvtColor (grayMat,grayMat, Imgproc.COLOR_GRAY2RGB);
-						//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
-						Core.addWeighted(resizeMat, (1 - edgeWeight), grayMat, edgeWeight , edgeGamma, resizeMat);
-						//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
-					}
-
-					if (loactionBias) {
-						//TO-DO: weighted average CHANGE + track bar################################
-						Core.addWeighted(resizeMat, (1 - locationWeight), locationMat, locationWeight , 0.0, resizeMat);
-					}
-
-					//split channels
-					Core.split (resizeMat, channels);
-
-					//clear last cenbters
-					displayCenters.Clear();
-					//center for each channel
-					for (int i = 0; i < channels.Count; i++) {
-						displayCenters.Add(getCenterPointFromMat (channels[i], i));
-					}
-
-					moments.Clear ();
-					centersObj.Clear ();
 				}
 				yield return new WaitForSeconds(secondsBtwProcessing);
 			}
 		}
 
-		public Centers getCenterPointFromMat(Mat _mat, int channel){
+		void OnGUI(){
+			if (showCalcMats && frameCount >= 10) {
+				//only black rect
+				unityRect = new UnityEngine.Rect (5f, 20f, (float)resizeSize.width /2, (float)resizeSize.height/2 );
+				GUImat = resizeMat.clone ();
+				GUIUtility.RotateAroundPivot (pivotAngle, pivotPoint);
+				Utils.matToTexture2D (GUImat, GUItexture);
 
-		
-			// 3rd order moment center of mass
-			moments.Add(Imgproc.moments(_mat,false));
-			point = new Point ((moments [channel].m10 / moments [channel].m00), (moments [channel].m01 / moments [channel].m00));
+				GUI.DrawTexture (unityRect, GUItexture);
 
-			//resize point up
-			point.x = map((float)point.x,0,(float)resizeSize.width ,(float)webCamTexture.width - (float)webCamTexture.width * exaggerateData,(float)webCamTexture.width * exaggerateData) ;
-			point.y = map((float)point.y,0,(float)resizeSize.height ,(float)webCamTexture.height - (float)webCamTexture.height * exaggerateData,(float)webCamTexture.height * exaggerateData) ;
 
-			centersObj.Add(new Centers(channel, point) );
-
-			return centersObj [channel];
+			}
 		}
 
 
 
-		public void takePhoto(){
-			Debug.Log ("TAKE PHOTO");
-			photoStartFrame = frameCount;
 
-			//TO-DO: PLAY audio
-			AudioSource audio = GetComponent<AudioSource>();		
-			audio.Play ();
-			//write to singleton
-			ImageManager.instance.photo = texture;
-			//TO-DO: emmit event for Markus
-
-			//camera to Jpeg rgba to bgr
-			Imgproc.cvtColor (rgbaMat, photoMat, Imgproc.COLOR_RGBA2BGR);
-			//write image
-			Imgcodecs.imwrite ("Assets/snapshot-with-data.jpeg", photoMat);
-			Imgproc.cvtColor (rgbMat, photoMat, Imgproc.COLOR_RGB2BGR);
-			Imgcodecs.imwrite ("Assets/snapshot-photo.jpeg", photoMat);
-
-
-
-		}
 		/// <summary>
 		/// Raises the destroy event.
 		/// </summary>
@@ -865,87 +688,8 @@ namespace AeStatix
 		{
 			return b1 + (s-a1)*(b2-b1)/(a2-a1);
 		}
-		void OnGUI(){
-			if (showCalcMats && frameCount >= 10) {
-				
-				//only black rect
-				unityRect = new UnityEngine.Rect (5f, 20f, (float)resizeSize.width /2, (float)resizeSize.height/2 );
-
-				if (!loactionBias && !edgeBias) {
-					GUImat = blackMat.clone ();
-					}
-				if (loactionBias && !edgeBias && GUItexture != null) {
-					//GUImat = blackMat.clone ();
-				
-					Core.addWeighted (locationMat, locationWeight, blackMat, (1 - locationWeight), 0.0, GUImat);
 
 
-					}
-				if (edgeBias && loactionBias) {
-					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
-					Core.addWeighted (locationMat, locationWeight, GUImat, (1 - locationWeight), 0.0, GUImat);
-
-
-				}
-				if ( !loactionBias && edgeBias  ) {
-
-					GUImat = grayMat.clone ();
-					Core.addWeighted (blackMat, (1-edgeWeight), grayMat, (edgeWeight), edgeGamma, GUImat);
-
-				}
-
-				Utils.matToTexture2D (GUImat, GUItexture);
-				GUI.DrawTexture (unityRect, GUItexture);
-
-			}
-
-		}
-
-		//ui controls
-		public void showEdge(){
-			edgeBias = !edgeBias;
-		}
-		public void showCenter(){
-			loactionBias = !loactionBias;
-		}
-		public void showcolor(){
-			weightedAverage = !weightedAverage;
-		}
-		//calculate the trackbar bar
-		public List<MatOfPoint> TriangleBar(float _percentToCenter){
-			barPointsArray = new Point[]{ new Point (rgbMat.width(), rgbMat.height()),
-				new Point (rgbaMat.width() - (triHight * _percentToCenter),rgbaMat.height()-( (rgbaMat.height() * _percentToCenter ))),
-				new Point(rgbaMat.width() , rgbaMat.height()-( (rgbaMat.height() * _percentToCenter )))};
-			
-//			foreach (Point _point in barPointsArray) {
-//				Debug.Log ("point = " + _point);
-//			}
-
-			barPoints = new MatOfPoint(barPointsArray);
-
-			triangleBar.Clear ();
-			triangleBar.Add (barPoints);
-
-			return triangleBar;
-			//either wnough kto sync or clear and add array to mat and to list
-
-		}
-		public float TrackbarDiff(Point _current){
-
-			trackbarDiffFloat = (float)(Math.Sqrt ((
-				(_current.x - ( frameWidth/2) ) * (_current.x - (frameWidth/2) )) + ((_current.y - (frameHeight/2) ) * (_current.y-(frameHeight/2) ))) );
-
-			if (trackbarDiffFloat > totalDistance - 10)
-				trackbarDiffFloat = totalDistance;
-			if (trackbarDiffFloat < 10)
-				trackbarDiffFloat = 0;
-
-			return (1 - trackbarDiffFloat/totalDistance);
-		}
-				public Point WeightedAverageThree(Point _redPoint, Point _greenPoint, Point _bluePoint){
-					return new Point( ((_redPoint.x * redCoeficiente) + (_greenPoint.x * greenCoeficiente) + (_bluePoint.x * blueCoeficiente)) / (redCoeficiente + greenCoeficiente + blueCoeficiente),
-						    		  ((_redPoint.y * redCoeficiente) + (_greenPoint.y * greenCoeficiente) + (_bluePoint.y * blueCoeficiente)) / (redCoeficiente + greenCoeficiente + blueCoeficiente));
-		}
 
 	}
 
