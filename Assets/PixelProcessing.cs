@@ -181,6 +181,7 @@ namespace AeStatix
 		//ui cross
 		[SerializeField]
 		bool cross = true;
+		[SerializeField]
 		bool guide = true;
 
 		/////////////////////////////////
@@ -644,15 +645,25 @@ namespace AeStatix
 						if (cross) {
 							//TO-DO: new point 
 							Imgproc.circle (rgbaMat,new Point( frameWidth/2,frameHeight/2) , 30, crossColor, 2,Imgproc.LINE_AA,0);
-							Imgproc.line(rgbaMat, new Point( (frameWidth/2)- (frameWidth/20),(frameHeight/2)-(frameHeight/20)),new Point(frameWidth/2.5 , frameHeight/2.5),crossColor,2,Imgproc.LINE_AA,0);
-							Imgproc.line(rgbaMat, new Point( (frameWidth/2)- (frameWidth/20),(frameHeight/2)+(frameHeight/20)),new Point(frameWidth/2.5 , frameHeight - (frameHeight/2.5)),crossColor,2,Imgproc.LINE_AA,0);
-							Imgproc.line(rgbaMat, new Point( (frameWidth/2)+ (frameWidth/20),(frameHeight/2)+(frameHeight/20)),new Point(frameWidth- (frameWidth/2.5) , frameHeight - (frameHeight/2.5)),crossColor,2,Imgproc.LINE_AA,0);
-							Imgproc.line(rgbaMat, new Point( (frameWidth/2)+ (frameWidth/20),(frameHeight/2)-(frameHeight/20)),new Point(frameWidth- (frameWidth/2.5) , (frameHeight/2.5)),crossColor,2,Imgproc.LINE_AA,0);
-
-								
-
+							for (int dotted = 10; dotted <= (frameWidth / 2); dotted += 10) {
+								if (dotted % 40 == 10 && dotted >=110) {
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) - ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) - ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 3, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) + ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) + ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 3, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) + ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) + ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 3, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 3, Imgproc.LINE_AA, 0);
+								}
+							}
 						}
 						if (guide) {
+							for (int dotted = 10; dotted <= (frameHeight * 2) ; dotted += 10) {
+								if (dotted % 40 == 10) {
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 3), dotted), new Point (frameWidth / 3, (10 + dotted)), crossColor, 3, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth * 0.666), dotted), new Point (frameWidth * 0.666, (10 + dotted)), crossColor, 3, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, frameHeight/3), new Point ((10 + dotted),  frameHeight/3), crossColor, 3, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, frameHeight* 0.666), new Point ((10 + dotted),  frameHeight* 0.666), crossColor, 3, Imgproc.LINE_AA, 0);
+
+								}
+							}
 						}
 
 						Utils.matToTexture2D (rgbaMat, texture, colors);
