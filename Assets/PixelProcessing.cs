@@ -2,6 +2,9 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
+using UnityEngine.Events;
+
 
 #if UNITY_5_3 || UNITY_5_3_OR_NEWER
 using UnityEngine.SceneManagement;
@@ -32,8 +35,6 @@ namespace AeStatix
 		public bool showCalcMats = false;
 		int frameCount = 0;
 		[SerializeField]
-		//		[Range(1,100)]
-		//		int skipFrames = 1;
 		[Range(0.016f,5f)]
 		float secondsBtwProcessing = 0.5f;
 
@@ -44,8 +45,6 @@ namespace AeStatix
 		[Range(1f,5f)]
 		float exaggerateData = 1;
 		Size resizeSize;
-//		[SerializeField]
-//		bool displaySpeed = true;
 		[SerializeField]
 		[Range(0.8f,1f)]
 		float speed = 0.85f;
@@ -69,7 +68,7 @@ namespace AeStatix
 		//draw
 		Scalar red = new Scalar(200,50,50,255);
 		Scalar green = new Scalar(50,250,50,255);
-		Scalar crossColor = new Scalar(50,250,50,255);
+		Scalar crossColor = new Scalar(170,170,170,255);
 		Scalar guideColor = new Scalar(50,250,50,255);
 		Scalar UIgreen = new Scalar(168,221,168,255);
 		Scalar blue = new Scalar(50,50,250,255);
@@ -184,6 +183,12 @@ namespace AeStatix
 		[SerializeField]
 		bool guide = true;
 
+		//build prefrences
+		[SerializeField]
+		bool webglBuild = false;
+		[SerializeField]
+		bool iosBuild = true;
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -194,12 +199,14 @@ namespace AeStatix
 		/// <summary>
 		/// Set the requested width of the camera device.
 		/// </summary>
-		 int requestedWidth = 1534;
-
+		//int requestedWidth = 1534;
+		int requestedWidth = 960;
+		
 		/// <summary>
 		/// Set the requested height of the camera device.
 		/// </summary>
-		 int requestedHeight = 1050;
+		//int requestedHeight = 1050;
+		 int requestedHeight = 540;
 
 		/// <summary>
 		/// Set the requested to using the front camera.
@@ -291,6 +298,18 @@ namespace AeStatix
 			loactionBias = false;
 			edgeBias = false;
 			weightedAverage = false;
+			cross = false;
+			guide = false;
+
+			//build settings
+			if (iosBuild) {
+				requestedWidth = 1534;
+				requestedHeight = 1050;
+			}
+			if (webglBuild) {
+				requestedWidth = 960;
+				requestedHeight = 540;
+			}
 
 			Initialize ();
 		}
@@ -560,17 +579,24 @@ namespace AeStatix
 			float heightScale = (float)Screen.height / height;
 			Quaternion baseRotation = Camera.main.transform.rotation;
 
-			if (widthScale < heightScale) {
-				Camera.main.transform.rotation = new Quaternion(0,0,1,1);
-				Camera.main.orthographicSize = (height * (float)Screen.height /(float)Screen.width) /2;
-				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z +10);
-			} else {
-				//Camera.main.transform.rotation = baseRotation * Quaternion.AngleAxis(webCamTexture.videoRotationAngle, Vector3.left);
+			if (iosBuild) {
+				if (widthScale < heightScale) {
+					Camera.main.transform.rotation = new Quaternion (0, 0, 1, 1);
+					Camera.main.orthographicSize = (height * (float)Screen.height / (float)Screen.width) / 2;
+					Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
+				} else {
 
-				Camera.main.orthographicSize = width / 2;
-				Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z +10);
+					Camera.main.orthographicSize = width / 2;
+					Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
+				}
 			}
-			//camera rotation
+			if (webglBuild) {
+				if (widthScale > heightScale) {
+					Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) / 2;
+				} else {
+					Camera.main.orthographicSize = height / 2;
+				}
+			}//camera rotation
 			//
 
 			//start processing
@@ -599,7 +625,9 @@ namespace AeStatix
 							Imgproc.rectangle (rgbaMat, new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize), new Point ((rgbaMat.width () / 2) + snapToCenterSize, (rgbaMat.height () / 2) + snapToCenterSize), blue, 2);
 							Imgproc.putText (rgbaMat, "snap to center", new Point ((rgbaMat.width () / 2) - snapToCenterSize, (rgbaMat.height () / 2) - snapToCenterSize - 5), 0, 0.8, blue, 2);
 						}
-						Imgproc.putText (rgbaMat, " W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, rgbaMat.height() - 20), 2, 1.5, UIgreen,2,Imgproc.LINE_AA,false);
+						if (iosBuild) {
+							Imgproc.putText (rgbaMat, " W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, rgbaMat.height () - 20), 2, 1.5, UIgreen, 2, Imgproc.LINE_AA, false);
+						}					
 						//draw centers
 
 						if (snapToCenter) {
@@ -644,23 +672,23 @@ namespace AeStatix
 						}
 						if (cross) {
 							//TO-DO: new point 
-							Imgproc.circle (rgbaMat,new Point( frameWidth/2,frameHeight/2) , 30, crossColor, 2,Imgproc.LINE_AA,0);
+							Imgproc.circle (rgbaMat,new Point( frameWidth/2,frameHeight/2) , 30, crossColor, 0,Imgproc.LINE_AA,0);
 							for (int dotted = 10; dotted <= (frameWidth / 2); dotted += 10) {
 								if (dotted % 40 == 10 && dotted >=110) {
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) - ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) - ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 3, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) + ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) + ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 3, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) + ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) + ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 3, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 3, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) - ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) - ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) + ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) + ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) + ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) + ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
 								}
 							}
 						}
 						if (guide) {
 							for (int dotted = 10; dotted <= (frameHeight * 2) ; dotted += 10) {
 								if (dotted % 40 == 10) {
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 3), dotted), new Point (frameWidth / 3, (10 + dotted)), crossColor, 3, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point ((frameWidth * 0.666), dotted), new Point (frameWidth * 0.666, (10 + dotted)), crossColor, 3, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, frameHeight/3), new Point ((10 + dotted),  frameHeight/3), crossColor, 3, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, frameHeight* 0.666), new Point ((10 + dotted),  frameHeight* 0.666), crossColor, 3, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 3), dotted), new Point (frameWidth / 3, (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth * 0.666), dotted), new Point (frameWidth * 0.666, (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, frameHeight/3), new Point ((10 + dotted),  frameHeight/3), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, frameHeight* 0.666), new Point ((10 + dotted),  frameHeight* 0.666), crossColor, 0, Imgproc.LINE_AA, 0);
 
 								}
 							}
@@ -793,19 +821,24 @@ namespace AeStatix
 			return centersObj [channel];
 		}
 
+		void OnEnable(){
+			// ImageCroppedEvent.OnCropped += AnalyseImage();
+		}
+		void OnDisable(){
+			// ImageCroppedEvent.OnCropped += AnalyseImage();
 
-
+		}
 		public void takePhoto(){
 			Debug.Log ("TAKE PHOTO");
 			photoStartFrame = frameCount;
 
-			//TO-DO: PLAY audio
+			//audio
 			AudioSource audio = GetComponent<AudioSource>();		
 			audio.Play ();
 			//write to singleton
 			ImageManager.instance.photo = texture;
 			//TO-DO: emmit event for Markus
-
+			//UnityToXcodePhotoEvent;
 			//camera to Jpeg rgba to bgr
 			Imgproc.cvtColor (rgbaMat, photoMat, Imgproc.COLOR_RGBA2BGR);
 			//write image
@@ -922,6 +955,21 @@ namespace AeStatix
 		public void showcolor(){
 			weightedAverage = !weightedAverage;
 		}
+		public void showGuide(){
+			guide = !guide;
+		}
+		public void showCross(){
+			cross = !cross;
+		}
+		public void ExaggerationSlider(){
+			//to-do : init up 
+			float sliderGet = GameObject.Find ("exaggeration").GetComponent <Slider> ().value;
+			exaggerateData = sliderGet;
+
+			Text _text = GameObject.Find ("exaggerationText").GetComponent<UnityEngine.UI.Text>();
+			_text.text = exaggerateData.ToString ();
+		}
+
 		//calculate the trackbar bar
 		public List<MatOfPoint> TriangleBar(float _percentToCenter){
 			barPointsArray = new Point[]{ new Point (rgbMat.width(), rgbMat.height()),

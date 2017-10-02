@@ -1,14 +1,15 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/PixelProcessing.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/WebCamTextureToMatHelper.cs">
     <Files>
-      <File FileName="Assets/opencvPOC.cs" Line="1" Column="1" />
-      <File FileName="Assets/OpenCVForUnity/Editor/iOS_BuildPostprocessor.cs" Line="1" Column="1" />
-      <File FileName="Assets/PixelProcessing.cs" Line="558" Column="4" />
       <File FileName="Assets/FPSDisplay.cs" Line="1" Column="1" />
       <File FileName="Assets/ImageManager.cs" Line="1" Column="1" />
       <File FileName="Assets/Singelton.cs" Line="1" Column="1" />
       <File FileName="Assets/CenterOfMassTests.cs" Line="1" Column="1" />
+      <File FileName="Assets/PixelProcessing.cs" Line="1" Column="1" />
+      <File FileName="Assets/UnityToXcodePhotoEvent.cs" Line="30" Column="1" />
+      <File FileName="Assets/WebCamTextureToMatHelper.cs" Line="7" Column="32" />
+      <File FileName="Assets/WebCamTextureFaceDetection.cs" Line="50" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
