@@ -1,10 +1,12 @@
 ﻿using System;
 using UnityEngine;
+using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.Events;
 using System.Runtime.InteropServices;
+using System.IO;
 
 #if UNITY_5_3 || UNITY_5_3_OR_NEWER
 using UnityEngine.SceneManagement;
@@ -196,6 +198,9 @@ namespace AeStatix
 		[SerializeField]
 		bool iosBuild = true;
 
+		//file upload
+		[SerializeField]
+		Texture2D fileUpload;
 		/////////////////////////////////
 
 		/// <summary>
@@ -257,6 +262,10 @@ namespace AeStatix
 		//resize mat
 		Mat GUImat;
 
+		//file upload mat
+		Mat fileUploadMat;
+		byte[] fileUploadData;
+
 		//submat
 		Mat submat;
 
@@ -279,11 +288,17 @@ namespace AeStatix
 		/// The colors.
 		/// </summary>
 		Color32[] colors;
+		Color32[] fileColors;
 
 		/// <summary>
 		/// The texture.
 		/// </summary>
 		Texture2D texture;
+
+		/// <summary>
+		/// file texture.
+		/// </summary>
+		Texture2D fileTexture;
 
 		//GUI texture
 		Texture2D GUItexture;
@@ -455,6 +470,10 @@ namespace AeStatix
 				rgbMat.Dispose ();
 				rgbMat = null;
 			}
+			if (fileUploadMat != null) {
+				fileUploadMat.Dispose ();
+				fileUploadMat = null;
+			}
 			if (grayMat != null) {
 				grayMat.Dispose ();
 				grayMat = null;
@@ -618,8 +637,12 @@ namespace AeStatix
 				if (frameCount >= photoStartFrame + pauseFrames) {
 
 					if (frameProcessingInit) {
-						Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
-						Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+						if (!fileUpload) {
+							Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
+							Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+						} else {
+							Imgproc.resize(fileUploadMat,rgbaMat,new Size(rgbaMat.width (),rgbaMat.height ()));
+						}
 
 						//green LOCATION rect GUI
 						if (showCalcMats && loactionBias && drawRect) {
@@ -668,6 +691,7 @@ namespace AeStatix
 								}
 							}
 						}
+
 
 						//trackBar
 						if (showTrackBar) {
@@ -763,14 +787,42 @@ namespace AeStatix
 
 		private IEnumerator processFrame(){
 			while (true && webCamTexture.width > 100) {
+				//TO-DO: set flags to initiate texture size and mat size only once
+
 				//resize down
 				if (resizeMat != null) {
 					resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 
 					frameProcessingInit = true;
 					//resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
-					Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+					if (fileUpload != null) {
+						//initiate texture (output) And it's size acordingto file
+						Debug.Log("path: " + AssetDatabase.GetAssetPath(fileUpload));
+						fileUploadData =  File.ReadAllBytes(AssetDatabase.GetAssetPath(fileUpload));
 
+						if (fileColors == null || fileColors.Length != fileUpload.width * fileUpload.height)
+							fileColors = new Color32[fileUpload.width * fileUpload.height];
+						if (fileTexture == null || fileTexture.width != fileUpload.width || fileTexture.height != fileUpload.height)
+							fileTexture = new Texture2D (fileUpload.width, fileUpload.height, TextureFormat.RGBA32, false);
+
+
+						//set as main tex
+					//	gameObject.GetComponent<Renderer> ().material.mainTexture = fileTexture;
+
+						fileTexture.LoadImage (fileUploadData);
+						fileUploadMat = new Mat (fileTexture.height, fileTexture.width, CvType.CV_8UC3);
+
+						Utils.texture2DToMat (fileTexture, fileUploadMat);
+					//	Utils.matToTexture2D (fileUploadMat, fileUpload, fileColors);
+						Imgproc.resize (fileUploadMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+
+						//Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+					} else {
+						if (gameObject.GetComponent<Renderer> ().material.mainTexture != texture) {
+							gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
+						}
+						Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+					}
 					//edge detection and wights
 					if(edgeBias){
 						grayMat = resizeMat.clone ();
