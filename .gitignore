@@ -4,3 +4,4 @@ ProjectSettings/
 Assets/StreamingAssets/
 Assets/OpenCVForUnity/
 model.obj
+*.meta
