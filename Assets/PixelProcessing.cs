@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.Events;
-
+using System.Runtime.InteropServices;
 
 #if UNITY_5_3 || UNITY_5_3_OR_NEWER
 using UnityEngine.SceneManagement;
@@ -13,6 +13,7 @@ using OpenCVForUnity;
 
 namespace AeStatix
 {	
+	// costume center object
 	public class Centers{
 		public int name{ get; set;}
 		public Point point { get; set;}
@@ -22,12 +23,18 @@ namespace AeStatix
 		}
 
 	}
+
+
+//	// Unity to xcode and back
+//	[DllImport ("__Internal")]
+//	static class  PhotoFromUnity ();
+
 	/// <summary>
 	//AeStatix - real time image analysis and feedback
 	/// </summary>
 	public class PixelProcessing : MonoBehaviour
 	{
-
+		
 		//frame processing
 		//show mats
 		[Header("Analysis")]
@@ -831,7 +838,7 @@ namespace AeStatix
 		public void takePhoto(){
 			Debug.Log ("TAKE PHOTO");
 			photoStartFrame = frameCount;
-
+			//PhotoFromUnity ();
 			//audio
 			AudioSource audio = GetComponent<AudioSource>();		
 			audio.Play ();
