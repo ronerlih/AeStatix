@@ -201,6 +201,7 @@ namespace AeStatix
 		//file upload
 		[SerializeField]
 		Texture2D fileUpload;
+		bool fileUploadFlag = false;
 		/////////////////////////////////
 
 		/// <summary>
@@ -787,7 +788,6 @@ namespace AeStatix
 
 		private IEnumerator processFrame(){
 			while (true && webCamTexture.width > 100) {
-				//TO-DO: set flags to initiate texture size and mat size only once
 
 				//resize down
 				if (resizeMat != null) {
@@ -796,10 +796,19 @@ namespace AeStatix
 					frameProcessingInit = true;
 					//resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 					if (fileUpload != null) {
-						//initiate texture (output) And it's size acordingto file
-						Debug.Log("path: " + AssetDatabase.GetAssetPath(fileUpload));
-						fileUploadData =  File.ReadAllBytes(AssetDatabase.GetAssetPath(fileUpload));
 
+						fileUploadFlag = true;
+
+						try{
+							//initiate texture (output) And it's size acordingto file
+							Debug.Log("path: " + AssetDatabase.GetAssetPath(fileUpload));
+							fileUploadData =  File.ReadAllBytes(AssetDatabase.GetAssetPath(fileUpload));
+						}catch (IOException e){
+							Debug.Log ("exception: " + e);
+							fileUpload = null;
+							//reload
+							SceneManager.LoadScene( SceneManager.GetActiveScene().name );
+						}
 						if (fileColors == null || fileColors.Length != fileUpload.width * fileUpload.height)
 							fileColors = new Color32[fileUpload.width * fileUpload.height];
 						if (fileTexture == null || fileTexture.width != fileUpload.width || fileTexture.height != fileUpload.height)
@@ -818,9 +827,10 @@ namespace AeStatix
 
 						//Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
 					} else {
-						if (gameObject.GetComponent<Renderer> ().material.mainTexture != texture) {
+							if (fileUploadFlag) {
 							gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
-						}
+							fileUploadFlag = false;
+							}
 						Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
 					}
 					//edge detection and wights
