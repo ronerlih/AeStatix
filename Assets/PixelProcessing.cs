@@ -780,11 +780,22 @@ namespace AeStatix
 						if (faceDetection) {
 							Core.flip (rgbaMat, rgbaMat, 1);
 
-							for (int i = 0; i < rects.Length; i++) {
-								Debug.Log ("detect faces " + rects [i]);
+							if(rects.Length > 0) {
+								Debug.Log ("detect faces " + rects [0]);
 								//draw faces
-								Imgproc.rectangle (rgbaMat, new Point (rects [i].x/resizeFactor, rects [i].y/resizeFactor), new Point ((rects [i].x/resizeFactor + rects [i].width/resizeFactor), (rects [i].y/resizeFactor + rects [i].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
+								//Core.bitwise_not( rgbaMat,rgbaMat);
+								OpenCVForUnity.Range horiRange = new OpenCVForUnity.Range( (int)(rects[0].x/resizeFactor),(int)(rects[0].x/resizeFactor + rects[0].width/resizeFactor));
+								OpenCVForUnity.Range vertRange = new OpenCVForUnity.Range ((int)(rects [0].y / resizeFactor), (int)(rects [0].y / resizeFactor + rects [0].height / resizeFactor));
+								Mat submat = rgbaMat.submat (vertRange,horiRange);
+								rgbaMat -= new Scalar (0, 0, 0, 100);
+								submat.copyTo (rgbaMat.submat (vertRange,horiRange));
+
+								//Imgproc.rectangle (rgbaMat, new Point (rects [0].x/resizeFactor, rects [0].y/resizeFactor), new Point ((rects [0].x/resizeFactor + rects [0].width/resizeFactor), (rects [0].y/resizeFactor + rects [0].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
+								//								rgbaMat.submat( rects [0]).copyTo (rgbMat.submat( rects [0]));
+//								rgbaMat -= new Scalar (0, 0, 0, 150);
+//								rgbMat.submat( rects [0]).copyTo (rgbaMat.submat( rects [0]));
 							}
+							
 						}
 						Utils.matToTexture2D (rgbaMat, texture, colors);
 					}
@@ -981,7 +992,6 @@ namespace AeStatix
 									Imgproc.threshold (grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY);
 								}
 
-
 								//weights
 								Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_GRAY2RGB);
 								//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
@@ -1026,8 +1036,7 @@ namespace AeStatix
 				point.x = map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData);
 				point.y = map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData);
 			} else {
-				
-				point.x = map ((float)point.x,  (float)resizeSize.width, 0,0, (float)webCamTexture.width);
+				point.x = map ((float)point.x, (float)resizeSize.width / 2  + (float)resizeSize.width, (float)resizeSize.width / 2  - (float)resizeSize.width, (float)webCamTexture.width/2 - (float)webCamTexture.width * exaggerateData , (float)webCamTexture.width/2 + (float)webCamTexture.width * exaggerateData  );
 				point.y = map ((float)point.y, 0, (float)resizeSize.height, 0, (float)webCamTexture.height );
 			}
 			centersObj.Add(new Centers(channel, point) );
