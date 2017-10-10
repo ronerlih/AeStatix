@@ -804,7 +804,7 @@ namespace AeStatix
 							Debug.Log("path: " + AssetDatabase.GetAssetPath(fileUpload));
 							fileUploadData =  File.ReadAllBytes(AssetDatabase.GetAssetPath(fileUpload));
 						}catch (IOException e){
-							Debug.Log ("exception: " + e);
+							Debug.Log ("CAUGHT - incompatible file exception: " + e);
 							fileUpload = null;
 							//reload
 							SceneManager.LoadScene( SceneManager.GetActiveScene().name );
@@ -832,6 +832,8 @@ namespace AeStatix
 							fileUploadFlag = false;
 							}
 						Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+						//flip values
+						Core.bitwise_not (resizeMat, resizeMat);
 					}
 					//edge detection and wights
 					if(edgeBias){
