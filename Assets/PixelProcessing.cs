@@ -210,7 +210,6 @@ namespace AeStatix
 		CascadeClassifier cascade;
 		MatOfRect faces;
 		OpenCVForUnity.Rect[] rects;
-
 		/////////////////////////////////
 
 		/// <summary>
@@ -260,6 +259,8 @@ namespace AeStatix
 
 		//faceMat
 		Mat faceMat;
+		//to copy to resize mat
+		Mat faceRefMat;
 
 		//resize mat
 		Mat resizeMat;
@@ -522,6 +523,10 @@ namespace AeStatix
 				faceMat.Dispose ();
 				faceMat = null;
 			}
+			if (faceRefMat != null) {
+				faceRefMat.Dispose ();
+				faceRefMat = null;
+			}
 			if (whiteMat != null) {
 				whiteMat.Dispose ();
 				whiteMat = null;
@@ -587,6 +592,7 @@ namespace AeStatix
 			GUImat = new Mat( resizeSize, CvType.CV_8UC1);
 			grayMat = new Mat (resizeSize, CvType.CV_8UC1);
 			faceMat = new Mat (resizeSize, CvType.CV_8UC1);
+			faceRefMat = new Mat (resizeSize, CvType.CV_8UC3);
 			photoMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 
 			//assemble location Mat
@@ -772,6 +778,8 @@ namespace AeStatix
 							}
 						}
 						if (faceDetection) {
+							Core.flip (rgbaMat, rgbaMat, 1);
+
 							for (int i = 0; i < rects.Length; i++) {
 								Debug.Log ("detect faces " + rects [i]);
 								//draw faces
@@ -794,7 +802,7 @@ namespace AeStatix
 
 		}
 		public void SnapToCenters(){
-			if (frameCount >=0){
+			if (frameCount >=0 && !faceDetection){
 				for (int q = 0; q < displayCenters.Count; q++) {
 					//channel center inside rect
 					if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
@@ -926,60 +934,77 @@ namespace AeStatix
 						for (int i = 0; i < channels.Count; i++) {
 							displayCenters.Add (getCenterPointFromMat (channels [i], i));
 						}
-					} else {
+					} 
+
+					//face detection
+
+					else {
 						Debug.Log ("face detection on");
 
 						//start of copy
-
+						Core.flip(resizeMat,resizeMat,1);
 						//TO-DO: test if multiple clone is segnificant performance (switched from edge bias)
 						grayMat = resizeMat.clone ();
 						Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
 
 						//face detection
-						Imgproc.equalizeHist (grayMat, faceMat);
+						Imgproc.equalizeHist (grayMat, grayMat);
 
 						if (cascade != null)
-							cascade.detectMultiScale (faceMat, faces, 1.1, 2, 2, 
+							cascade.detectMultiScale (grayMat, faces, 1.1, 2, 2, 
 								new Size (20, 20), new Size ());
 
 						rects = faces.toArray ();
 
-						// draw faces (in update loop)
 
-						//edge detection and wights
-						if (edgeBias) {
-							//grayMat = resizeMat.clone ();
-							//Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+						if (rects.Length > 0) {
+							faceRefMat.setTo(new Scalar (255,255,255));
 
-							Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
-							Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
-							if (thresh) {
-								Imgproc.threshold (grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY);
+							Debug.Log ("detect faces " + rects [0]);
+
+							resizeMat.submat( rects [0]).copyTo (faceRefMat.submat( rects [0]));
+
+							//flip values
+							Core.bitwise_not (faceRefMat, faceRefMat);
+							
+
+							// draw faces (in update loop)
+
+
+							//edge detection and wights
+							if (edgeBias) {
+								Imgproc.cvtColor (faceRefMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+
+								Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
+								Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
+								if (thresh) {
+									Imgproc.threshold (grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY);
+								}
+
+
+								//weights
+								Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_GRAY2RGB);
+								//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
+								Core.addWeighted (faceRefMat, (1 - edgeWeight), grayMat, edgeWeight, edgeGamma, faceRefMat);
+								//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
 							}
 
+							if (loactionBias) {
+								//TO-DO: weighted average CHANGE + track bar################################ done
+								//TO-DO:  individual location (?)
+								Core.addWeighted (faceRefMat, (1 - locationWeight), locationMat, locationWeight, 0.0, faceRefMat);
+							}
 
-							//weights
-							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_GRAY2RGB);
-							//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
-							Core.addWeighted (resizeMat, (1 - edgeWeight), grayMat, edgeWeight, edgeGamma, resizeMat);
-							//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
+							//split channels
+							Core.split (faceRefMat, channels);
+
+							//clear last cenbters
+							displayCenters.Clear ();
+							//center for each channel
+							for (int i = 0; i < channels.Count; i++) {
+								displayCenters.Add (getCenterPointFromMat (channels [i], i));
+							}
 						}
-
-						if (loactionBias) {
-							//TO-DO: weighted average CHANGE + track bar################################
-							Core.addWeighted (resizeMat, (1 - locationWeight), locationMat, locationWeight, 0.0, resizeMat);
-						}
-
-						//split channels
-						Core.split (resizeMat, channels);
-
-						//clear last cenbters
-						displayCenters.Clear ();
-						//center for each channel
-						for (int i = 0; i < channels.Count; i++) {
-							displayCenters.Add (getCenterPointFromMat (channels [i], i));
-						}
-
 						//end of copy
 					}
 					moments.Clear ();
@@ -997,9 +1022,14 @@ namespace AeStatix
 			point = new Point ((moments [channel].m10 / moments [channel].m00), (moments [channel].m01 / moments [channel].m00));
 
 			//resize point up
-			point.x = map((float)point.x,0,(float)resizeSize.width ,(float)webCamTexture.width - (float)webCamTexture.width * exaggerateData,(float)webCamTexture.width * exaggerateData) ;
-			point.y = map((float)point.y,0,(float)resizeSize.height ,(float)webCamTexture.height - (float)webCamTexture.height * exaggerateData,(float)webCamTexture.height * exaggerateData) ;
-
+			if (!faceDetection) {
+				point.x = map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData);
+				point.y = map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData);
+			} else {
+				
+				point.x = map ((float)point.x,  (float)resizeSize.width, 0,0, (float)webCamTexture.width);
+				point.y = map ((float)point.y, 0, (float)resizeSize.height, 0, (float)webCamTexture.height );
+			}
 			centersObj.Add(new Centers(channel, point) );
 
 			return centersObj [channel];
@@ -1100,7 +1130,8 @@ namespace AeStatix
 				unityRect = new UnityEngine.Rect (5f, 20f, (float)resizeSize.width /2, (float)resizeSize.height/2 );
 
 				if (!loactionBias && !edgeBias) {
-					GUImat = blackMat.clone ();
+					//TO-DO: switch between face detectiuon ui and regular
+					GUImat = faceRefMat.clone ();
 					}
 				if (loactionBias && !edgeBias && GUItexture != null) {
 					//GUImat = blackMat.clone ();
