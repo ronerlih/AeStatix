@@ -202,6 +202,15 @@ namespace AeStatix
 		[SerializeField]
 		Texture2D fileUpload;
 		bool fileUploadFlag = false;
+		[Space(10)]
+
+		//faceDetection
+		[SerializeField]
+		bool faceDetection = false;
+		CascadeClassifier cascade;
+		MatOfRect faces;
+		OpenCVForUnity.Rect[] rects;
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -248,6 +257,9 @@ namespace AeStatix
 
 		//gray mat
 		Mat grayMat;
+
+		//faceMat
+		Mat faceMat;
 
 		//resize mat
 		Mat resizeMat;
@@ -334,7 +346,34 @@ namespace AeStatix
 				requestedHeight = 540;
 			}
 
+			//webGL load cascade
+
+			#if UNITY_WEBGL && !UNITY_EDITOR
+			var getFilePath_Coroutine = Utils.getFilePathAsync("lbpcascade_frontalface.xml", 
+			(result) => {
+			coroutines.Clear ();
+
+			cascade = new CascadeClassifier ();
+			cascade.load(result);
 			Initialize ();
+			}, 
+			(result, progress) => {
+			Debug.Log ("getFilePathAsync() progress : " + result + " " + Mathf.CeilToInt (progress * 100) + "%");
+			});
+			coroutines.Push (getFilePath_Coroutine);
+			StartCoroutine (getFilePath_Coroutine);
+			#else
+			cascade = new CascadeClassifier ();
+			cascade = new CascadeClassifier (Utils.getFilePath ("lbpcascade_frontalface.xml"));
+			//cascade.load (Utils.getFilePath ("haarcascade_frontalface_alt.xml"));
+			//            if (cascade.empty ()) {
+			//                Debug.LogError ("cascade file is not loaded.Please copy from “OpenCVForUnity/StreamingAssets/” to “Assets/StreamingAssets/” folder. ");
+			//            }
+			Initialize ();
+			#endif
+
+			// init before face detection
+			//Initialize ();
 		}
 
 		/// <summary>
@@ -479,6 +518,10 @@ namespace AeStatix
 				grayMat.Dispose ();
 				grayMat = null;
 			}
+			if (faceMat != null) {
+				faceMat.Dispose ();
+				faceMat = null;
+			}
 			if (whiteMat != null) {
 				whiteMat.Dispose ();
 				whiteMat = null;
@@ -543,6 +586,7 @@ namespace AeStatix
 			copyMat = new Mat(resizeSize, CvType.CV_8UC3);
 			GUImat = new Mat( resizeSize, CvType.CV_8UC1);
 			grayMat = new Mat (resizeSize, CvType.CV_8UC1);
+			faceMat = new Mat (resizeSize, CvType.CV_8UC1);
 			photoMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 
 			//assemble location Mat
@@ -565,6 +609,8 @@ namespace AeStatix
 				displayCenters.Add (new Centers(c, new Point(rgbMat.width()/2,rgbMat.height()/2)));
 			}
 
+			//faces
+			faces = new MatOfRect ();
 
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
@@ -725,7 +771,13 @@ namespace AeStatix
 								}
 							}
 						}
-
+						if (faceDetection) {
+							for (int i = 0; i < rects.Length; i++) {
+								Debug.Log ("detect faces " + rects [i]);
+								//draw faces
+								Imgproc.rectangle (rgbaMat, new Point (rects [i].x/resizeFactor, rects [i].y/resizeFactor), new Point ((rects [i].x/resizeFactor + rects [i].width/resizeFactor), (rects [i].y/resizeFactor + rects [i].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
+							}
+						}
 						Utils.matToTexture2D (rgbaMat, texture, colors);
 					}
 				} else {
@@ -828,47 +880,108 @@ namespace AeStatix
 						//Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
 					} else {
 							if (fileUploadFlag) {
+							//return texture to camera after file upload
 							gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
 							fileUploadFlag = false;
 							}
 						Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+
+					}
+
+					if (!faceDetection) {
+
 						//flip values
 						Core.bitwise_not (resizeMat, resizeMat);
-					}
-					//edge detection and wights
-					if(edgeBias){
-						grayMat = resizeMat.clone ();
-						Imgproc.cvtColor( grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
 
-						Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
-						Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
-						if(thresh){
-						Imgproc.threshold ( grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY );
+						//edge detection and wights
+						if (edgeBias) {
+							grayMat = resizeMat.clone ();
+							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+
+							Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
+							Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
+							if (thresh) {
+								Imgproc.threshold (grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY);
+							}
+
+
+							//weights
+							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_GRAY2RGB);
+							//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
+							Core.addWeighted (resizeMat, (1 - edgeWeight), grayMat, edgeWeight, edgeGamma, resizeMat);
+							//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
 						}
 
+						if (loactionBias) {
+							//TO-DO: weighted average CHANGE + track bar################################
+							Core.addWeighted (resizeMat, (1 - locationWeight), locationMat, locationWeight, 0.0, resizeMat);
+						}
 
-						//weights
-						Imgproc.cvtColor (grayMat,grayMat, Imgproc.COLOR_GRAY2RGB);
-						//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
-						Core.addWeighted(resizeMat, (1 - edgeWeight), grayMat, edgeWeight , edgeGamma, resizeMat);
-						//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
+						//split channels
+						Core.split (resizeMat, channels);
+
+						//clear last cenbters
+						displayCenters.Clear ();
+						//center for each channel
+						for (int i = 0; i < channels.Count; i++) {
+							displayCenters.Add (getCenterPointFromMat (channels [i], i));
+						}
+					} else {
+						Debug.Log ("face detection on");
+
+						//start of copy
+
+						//TO-DO: test if multiple clone is segnificant performance (switched from edge bias)
+						grayMat = resizeMat.clone ();
+						Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+
+						//face detection
+						Imgproc.equalizeHist (grayMat, faceMat);
+
+						if (cascade != null)
+							cascade.detectMultiScale (faceMat, faces, 1.1, 2, 2, 
+								new Size (20, 20), new Size ());
+
+						rects = faces.toArray ();
+
+						// draw faces (in update loop)
+
+						//edge detection and wights
+						if (edgeBias) {
+							//grayMat = resizeMat.clone ();
+							//Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+
+							Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
+							Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
+							if (thresh) {
+								Imgproc.threshold (grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY);
+							}
+
+
+							//weights
+							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_GRAY2RGB);
+							//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
+							Core.addWeighted (resizeMat, (1 - edgeWeight), grayMat, edgeWeight, edgeGamma, resizeMat);
+							//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
+						}
+
+						if (loactionBias) {
+							//TO-DO: weighted average CHANGE + track bar################################
+							Core.addWeighted (resizeMat, (1 - locationWeight), locationMat, locationWeight, 0.0, resizeMat);
+						}
+
+						//split channels
+						Core.split (resizeMat, channels);
+
+						//clear last cenbters
+						displayCenters.Clear ();
+						//center for each channel
+						for (int i = 0; i < channels.Count; i++) {
+							displayCenters.Add (getCenterPointFromMat (channels [i], i));
+						}
+
+						//end of copy
 					}
-
-					if (loactionBias) {
-						//TO-DO: weighted average CHANGE + track bar################################
-						Core.addWeighted(resizeMat, (1 - locationWeight), locationMat, locationWeight , 0.0, resizeMat);
-					}
-
-					//split channels
-					Core.split (resizeMat, channels);
-
-					//clear last cenbters
-					displayCenters.Clear();
-					//center for each channel
-					for (int i = 0; i < channels.Count; i++) {
-						displayCenters.Add(getCenterPointFromMat (channels[i], i));
-					}
-
 					moments.Clear ();
 					centersObj.Clear ();
 				}
