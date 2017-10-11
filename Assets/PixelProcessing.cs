@@ -233,6 +233,9 @@ namespace AeStatix
 		List<Vector2> faceLandmarkPoints;
 		UnityEngine.Rect landmarkRect;
 		byte[] faceBytes;
+		[SerializeField]
+		[Range(0,200)]
+		int roiFactor = 50;
 		/////////////////////////////////
 
 		/// <summary>
@@ -1086,7 +1089,12 @@ namespace AeStatix
 
 						if (rects.Length > 0  ) {
 
-
+							//increase rect
+							rects [0].x -= roiFactor;
+							rects [0].y -= roiFactor;
+							rects[0].width += 2 * roiFactor;
+							rects[0].height += 2 * roiFactor;
+								
 							lastFaceFrame = frameCount;
 							//faceRefMat.setTo(new Scalar (255,255,255));
 
@@ -1108,7 +1116,7 @@ namespace AeStatix
 							faceLandmarkDetector.SetImage (pointer, faceRefMat.width (), faceRefMat.height (), 3, true);
 							//faceLandmarkDetector.SetImage<Color32> (landmarkColor, faceRefMat.width, faceRefMat.height, 4, true);
 
-							landmarkRect = new UnityEngine.Rect (rects [0].x - 10, rects [0].y -10, rects [0].width +10, rects [0].height +10);
+							landmarkRect = new UnityEngine.Rect (rects [0].x , rects [0].y, rects [0].width , rects [0].height);
 							//face landmark
 							faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (landmarkRect);
 							//draw landmark points
