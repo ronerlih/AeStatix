@@ -213,6 +213,13 @@ namespace AeStatix
 		List<int> displayFacePoints = new List<int>();
 		List<int> currentFacePoints = new List<int>();
 		bool facesFlag = false;
+		int lastFaceFrame = 0;
+		[SerializeField]
+		[Range(1,20)]
+		int numberOfFramesWithNoFace = 10;
+		OpenCVForUnity.Range horiRange;
+		OpenCVForUnity.Range vertRange;
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -372,6 +379,7 @@ namespace AeStatix
 			cascade = new CascadeClassifier ();
 			cascade = new CascadeClassifier (Utils.getFilePath ("lbpcascade_frontalface.xml"));
 			//cascade.load (Utils.getFilePath ("haarcascade_frontalface_alt.xml"));
+
 			//            if (cascade.empty ()) {
 			//                Debug.LogError ("cascade file is not loaded.Please copy from “OpenCVForUnity/StreamingAssets/” to “Assets/StreamingAssets/” folder. ");
 			//            }
@@ -626,7 +634,7 @@ namespace AeStatix
 
 			//faces
 			faces = new MatOfRect ();
-			faceSubmat = new Mat ();
+			faceSubmat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
@@ -729,28 +737,35 @@ namespace AeStatix
 
 						checkForCentersData ();
 
+						//to do: print values in face detection only when face is on 
+
 						if (weightedAverage) {
+							if (!faceDetection || (faceDetection &&  frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace))){
 							Imgproc.circle (rgbaMat, averageCenter.point, 8, averageColor, 13,Imgproc.LINE_AA,0);
 							//Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 2, averageColor, 2, Imgproc.LINE_AA, false);
+							}
 						} else {
-							for (int c = 0; c < currentCenters.Count; c++) {
-								switch (c) {
-								case 0:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13,Imgproc.LINE_AA,0);
+							if (!faceDetection || (faceDetection && frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace))) {
+
+								for (int c = 0; c < currentCenters.Count; c++) {
+									switch (c) {
+									case 0:
+										Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13, Imgproc.LINE_AA, 0);
 								//	Imgproc.putText (rgbaMat, "  red", currentCenters [c].point, 2, 2, red, 2,Imgproc.LINE_AA, false);
-									break;
-								case 1:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, green, 13,Imgproc.LINE_AA,0);
+										break;
+									case 1:
+										Imgproc.circle (rgbaMat, currentCenters [c].point, 8, green, 13, Imgproc.LINE_AA, 0);
 								//	Imgproc.putText (rgbaMat, "  green", currentCenters [c].point, 2, 2, green, 2,Imgproc.LINE_AA, false);
-									break;
-								case 2:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, blue, 13,Imgproc.LINE_AA,0);
+										break;
+									case 2:
+										Imgproc.circle (rgbaMat, currentCenters [c].point, 8, blue, 13, Imgproc.LINE_AA, 0);
 								//	Imgproc.putText (rgbaMat, "  blue", currentCenters [c].point, 2, 2, blue, 2,Imgproc.LINE_AA, false);
-									break;
-								default:
-									Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13,Imgproc.LINE_AA,0);
+										break;
+									default:
+										Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13, Imgproc.LINE_AA, 0);
 								//	Imgproc.putText (rgbaMat, "  default", currentCenters [c].point, 2, 2, red, 2,Imgproc.LINE_AA, false);
-									break;
+										break;
+									}
 								}
 							}
 						}
@@ -791,22 +806,31 @@ namespace AeStatix
 
 							Core.flip (rgbaMat, rgbaMat, 1);
 
-							if(rects != null && rects.Length > 0) {
+							if (rects != null && rects.Length > 0) {
+
+
 								checkForFacesData ();
 
 								Debug.Log ("detect faces " + rects [0]);
+								Imgproc.resize (faceSubmat, faceSubmat, rects [0].size ());
 								//draw faces
 								//Core.bitwise_not( rgbaMat,rgbaMat);
-								OpenCVForUnity.Range horiRange = new OpenCVForUnity.Range( currentFacePoints[0],currentFacePoints[2]);
-								OpenCVForUnity.Range vertRange = new OpenCVForUnity.Range (currentFacePoints[1],currentFacePoints[3]);
-								faceSubmat = rgbaMat.submat (vertRange,horiRange);
+								horiRange = new OpenCVForUnity.Range (currentFacePoints [0], currentFacePoints [2]);
+								vertRange = new OpenCVForUnity.Range (currentFacePoints [1], currentFacePoints [3]);
+								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
 								rgbaMat += new Scalar (50, 50, 50, 0);
-								faceSubmat.copyTo (rgbaMat.submat (vertRange,horiRange));
+								faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
 
 								//Imgproc.rectangle (rgbaMat, new Point (rects [0].x/resizeFactor, rects [0].y/resizeFactor), new Point ((rects [0].x/resizeFactor + rects [0].width/resizeFactor), (rects [0].y/resizeFactor + rects [0].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
 								//								rgbaMat.submat( rects [0]).copyTo (rgbMat.submat( rects [0]));
 //								rgbaMat -= new Scalar (0, 0, 0, 150);
 //								rgbMat.submat( rects [0]).copyTo (rgbaMat.submat( rects [0]));
+							} else {
+								if (frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
+									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
+									rgbaMat += new Scalar (50, 50, 50, 0);
+									faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
+								}
 							}
 							
 						}
@@ -826,7 +850,7 @@ namespace AeStatix
 
 		}
 		public void SnapToCenters(){
-			if (frameCount >=0 && !faceDetection){
+			if (frameCount >= 0 && !faceDetection){
 				for (int q = 0; q < displayCenters.Count; q++) {
 					//channel center inside rect
 					if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
@@ -874,10 +898,10 @@ namespace AeStatix
 			if(displayFacePoints == null){
 				displayFacePoints.Clear ();
 				//for (int o = 0; o <= 3; o++) {
-				displayFacePoints.Add ((int)Math.Round( rgbaMat.width () * 0.5));
-				displayFacePoints.Add ((int)Math.Round(rgbaMat.height () * 0.5));
-				displayFacePoints.Add (1);
-				displayFacePoints.Add (1);
+				displayFacePoints.Add ((int)(rects[0].x / resizeFactor));
+				displayFacePoints.Add ((int)(rects[0].y / resizeFactor));
+				displayFacePoints.Add ((int)(rects[0].width / resizeFactor));
+				displayFacePoints.Add ((int)(rects[0].height / resizeFactor));
 				//}
 			}
 
@@ -885,10 +909,10 @@ namespace AeStatix
 				currentFacePoints.Clear ();
 				//initiate currentCenters
 				for (int d = 0; d < displayFacePoints.Count; d++) {
-					currentFacePoints.Add ((int)Math.Round( rgbaMat.width () * 0.5));
-					currentFacePoints.Add ((int)Math.Round(rgbaMat.height () * 0.5));
-					currentFacePoints.Add (1);
-					currentFacePoints.Add (1);
+					currentFacePoints.Add ((int)(rects[0].x / resizeFactor));
+					currentFacePoints.Add ((int)(rects[0].y / resizeFactor));
+					currentFacePoints.Add ((int)((rects[0].x + rects[0].width) / resizeFactor));
+					currentFacePoints.Add ((int)((rects[0].y + rects[0].height) / resizeFactor));
 				}
 			}
 
@@ -1016,7 +1040,9 @@ namespace AeStatix
 						rects = faces.toArray ();
 
 
-						if (rects.Length > 0) {
+						if (rects.Length > 0  ) {
+
+							lastFaceFrame = frameCount;
 							faceRefMat.setTo(new Scalar (255,255,255));
 
 							Debug.Log ("detect faces " + rects [0]);
