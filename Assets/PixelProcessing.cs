@@ -12,6 +12,7 @@ using System.IO;
 using UnityEngine.SceneManagement;
 #endif
 using OpenCVForUnity;
+using DlibFaceLandmarkDetector;
 
 namespace AeStatix
 {	
@@ -220,6 +221,18 @@ namespace AeStatix
 		OpenCVForUnity.Range horiRange;
 		OpenCVForUnity.Range vertRange;
 
+		// FACE LANDMARK
+		/// <summary>
+		/// The face landmark detector.
+		/// </summary>
+		FaceLandmarkDetector faceLandmarkDetector;
+		/// <summary>
+		/// The shape_predictor_68_face_landmarks_dat_filepath.
+		/// </summary>
+		string shape_predictor_68_face_landmarks_dat_filepath;
+		List<Vector2> faceLandmarkPoints;
+		UnityEngine.Rect landmarkRect;
+		byte[] faceBytes;
 		/////////////////////////////////
 
 		/// <summary>
@@ -379,7 +392,13 @@ namespace AeStatix
 			StartCoroutine (getFilePath_Coroutine);
 			#else
 			cascade = new CascadeClassifier ();
-			cascade = new CascadeClassifier (Utils.getFilePath ("lbpcascade_frontalface.xml"));
+			cascade = new CascadeClassifier (OpenCVForUnity.Utils.getFilePath ("lbpcascade_frontalface.xml"));
+
+			//face landmark data set
+			shape_predictor_68_face_landmarks_dat_filepath = OpenCVForUnity.Utils.getFilePath ("shape_predictor_68_face_landmarks_for_mobile.dat");
+			faceLandmarkDetector = new FaceLandmarkDetector (shape_predictor_68_face_landmarks_dat_filepath);
+			// shape_predictor_68_face_landmarks_dat_filepath = Utils.getFilePath ("shape_predictor_68_face_landmarks.dat");
+
 			//cascade.load (Utils.getFilePath ("haarcascade_frontalface_alt.xml"));
 
 			//            if (cascade.empty ()) {
@@ -716,10 +735,10 @@ namespace AeStatix
 
 					if (frameProcessingInit) {
 						if (!fileUpload) {
-							Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
-							Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
+							OpenCVForUnity.Utils.webCamTextureToMat (webCamTexture, rgbaMat, colors);
+							OpenCVForUnity.Utils.webCamTextureToMat (webCamTexture, rgbMat, colors);
 						} else {
-							Imgproc.resize(fileUploadMat,rgbaMat,new Size(rgbaMat.width (),rgbaMat.height ()));
+							Imgproc.resize (fileUploadMat, rgbaMat, new Size (rgbaMat.width (), rgbaMat.height ()));
 						}
 
 						//green LOCATION rect GUI
@@ -747,9 +766,9 @@ namespace AeStatix
 						//to do: print values in face detection only when face is on 
 
 						if (weightedAverage) {
-							if (!faceDetection || (faceDetection &&  frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace))){
-							Imgproc.circle (rgbaMat, averageCenter.point, 8, averageColor, 13,Imgproc.LINE_AA,0);
-							//Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 2, averageColor, 2, Imgproc.LINE_AA, false);
+							if (!faceDetection || (faceDetection && frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace))) {
+								Imgproc.circle (rgbaMat, averageCenter.point, 8, averageColor, 13, Imgproc.LINE_AA, 0);
+								//Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 2, averageColor, 2, Imgproc.LINE_AA, false);
 							}
 						} else {
 							if (!faceDetection || (faceDetection && frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace))) {
@@ -788,7 +807,6 @@ namespace AeStatix
 
 								checkForFacesData ();
 
-								Debug.Log ("detect faces " + rects [0]);
 								Imgproc.resize (faceSubmat, faceSubmat, rects [0].size ());
 								//draw faces
 								//Core.bitwise_not( rgbaMat,rgbaMat);
@@ -805,7 +823,7 @@ namespace AeStatix
 							} else {
 								if (frameCount >= 15 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
 									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-									rgbaMat -= new Scalar(0, 0, 0, 100);
+									rgbaMat -= new Scalar (0, 0, 0, 100);
 									faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
 								}
 							}
@@ -822,28 +840,43 @@ namespace AeStatix
 						}
 						if (cross) {
 							//TO-DO: new point 
-							Imgproc.circle (rgbaMat,new Point( frameWidth/2,frameHeight/2) , 30, crossColor, 0,Imgproc.LINE_AA,0);
+							Imgproc.circle (rgbaMat, new Point (frameWidth / 2, frameHeight / 2), 30, crossColor, 0, Imgproc.LINE_AA, 0);
 							for (int dotted = 10; dotted <= (frameWidth / 2); dotted += 10) {
-								if (dotted % 40 == 10 && dotted >=110) {
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) - ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) - ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) + ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) + ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) + ((frameHeight/frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) + ((frameHeight/frameWidth)* (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
+								if (dotted % 40 == 10 && dotted >= 110) {
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted), (frameHeight / 2) + ((frameHeight / frameWidth) * (dotted))), new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) + ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) + ((frameHeight / frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) + ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
 									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (dotted))), new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 0, Imgproc.LINE_AA, 0);
 								}
 							}
 						}
 						if (guide) {
-							for (int dotted = 10; dotted <= (frameHeight * 2) ; dotted += 10) {
+							for (int dotted = 10; dotted <= (frameHeight * 2); dotted += 10) {
 								if (dotted % 40 == 10) {
 									Imgproc.line (rgbaMat, new Point ((frameWidth / 3), dotted), new Point (frameWidth / 3, (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
 									Imgproc.line (rgbaMat, new Point ((frameWidth * 0.666), dotted), new Point (frameWidth * 0.666, (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, frameHeight/3), new Point ((10 + dotted),  frameHeight/3), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, frameHeight* 0.666), new Point ((10 + dotted),  frameHeight* 0.666), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, frameHeight / 3), new Point ((10 + dotted), frameHeight / 3), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, frameHeight * 0.666), new Point ((10 + dotted), frameHeight * 0.666), crossColor, 0, Imgproc.LINE_AA, 0);
 
 								}
 							}
 						}
-						Utils.matToTexture2D (rgbaMat, texture, colors);
+						//print points
+//						if (faceLandmarkPoints !=null && faceLandmarkPoints.Count >0 ) {
+//							faceLandmarkDetector.DrawDetectLandmarkResult<Color32> (colors, webCamTexture.width, webCamTexture.height, 4, true, 0, 255, 0, 255);
+//						}
+						if (faceLandmarkPoints != null && faceLandmarkPoints.Count > 0) {
+							Debug.Log("faceLandmarkPoints : " + faceLandmarkPoints.Count);
+
+//							foreach (Vector2 _point in faceLandmarkPoints) {
+//								Point _cvPoint = new Point(_point.x,_point.y);
+//								Debug.Log ("point: " + _cvPoint.x + "," + _cvPoint.y); 
+//								Imgproc.circle (rgbaMat, new Point (_point.x, _point.y), 1, green, 1);
+//							}
+						}
+
+						OpenCVForUnity.Utils.matToTexture2D (rgbaMat, texture, colors);
+
 					}
 				} else {
 					// photo border
@@ -852,7 +885,9 @@ namespace AeStatix
 					photoWhiteMat.rowRange(0,20).copyTo(rgbMat.rowRange(0,20));
 					photoWhiteMat.rowRange(photoWhiteMat.rows() -20 ,photoWhiteMat.rows()).copyTo(rgbMat.rowRange(photoWhiteMat.rows() -20 ,photoWhiteMat.rows()));
 
-					Utils.matToTexture2D (rgbMat, texture, colors);
+					OpenCVForUnity.Utils.matToTexture2D (rgbMat, texture, colors);
+
+
 				}
 				frameCount++;
 			}
@@ -973,7 +1008,7 @@ namespace AeStatix
 						fileTexture.LoadImage (fileUploadData);
 						fileUploadMat = new Mat (fileTexture.height, fileTexture.width, CvType.CV_8UC3);
 
-						Utils.texture2DToMat (fileTexture, fileUploadMat);
+						OpenCVForUnity.Utils.texture2DToMat (fileTexture, fileUploadMat);
 					//	Utils.matToTexture2D (fileUploadMat, fileUpload, fileColors);
 						Imgproc.resize (fileUploadMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
 
@@ -1051,16 +1086,34 @@ namespace AeStatix
 
 						if (rects.Length > 0  ) {
 
-							lastFaceFrame = frameCount;
-							faceRefMat.setTo(new Scalar (255,255,255));
 
-							Debug.Log ("detect faces " + rects [0]);
+							lastFaceFrame = frameCount;
+							//faceRefMat.setTo(new Scalar (255,255,255));
+
+							//Debug.Log ("detect faces " + rects [0]);
 
 							//change mat sizes
 							faceRefMat.create (rects [0].size(), CvType.CV_8UC3);
 							grayFaceMat.create (rects [0].size(), CvType.CV_8UC1);
 
 							resizeMat.submat( rects [0]).copyTo (faceRefMat);
+
+							//landmark detection
+							faceBytes = new byte[ faceRefMat.width() * faceRefMat.height() * 3];
+							OpenCVForUnity.Utils.copyFromMat (faceRefMat, faceBytes);
+							IntPtr pointer = Marshal.AllocHGlobal(faceBytes.Length);
+							Marshal.Copy (faceBytes, 0, pointer , faceBytes.Length);
+
+
+							faceLandmarkDetector.SetImage (pointer, faceRefMat.width (), faceRefMat.height (), 3, true);
+							//faceLandmarkDetector.SetImage<Color32> (landmarkColor, faceRefMat.width, faceRefMat.height, 4, true);
+
+							landmarkRect = new UnityEngine.Rect (rects [0].x - 10, rects [0].y -10, rects [0].width +10, rects [0].height +10);
+							//face landmark
+							faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (landmarkRect);
+							//draw landmark points
+							//faceLandmarkDetector.DrawDetectLandmarkResult<Color32> (colors, webCamTexture.width, webCamTexture.height, 4, true, 0, 255, 0, 255);
+
 
 							//flip values
 							Core.bitwise_not (faceRefMat, faceRefMat);
@@ -1261,7 +1314,7 @@ namespace AeStatix
 
 				}
 
-				Utils.matToTexture2D (GUImat, GUItexture);
+				OpenCVForUnity.Utils.matToTexture2D (GUImat, GUItexture);
 				GUI.DrawTexture (unityRect, GUItexture);
 
 			}
