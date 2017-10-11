@@ -771,6 +771,40 @@ namespace AeStatix
 						}
 
 
+
+						if (faceDetection) {
+
+							Core.flip (rgbaMat, rgbaMat, 1);
+
+							if (rects != null && rects.Length > 0) {
+
+
+								checkForFacesData ();
+
+								Debug.Log ("detect faces " + rects [0]);
+								Imgproc.resize (faceSubmat, faceSubmat, rects [0].size ());
+								//draw faces
+								//Core.bitwise_not( rgbaMat,rgbaMat);
+								horiRange = new OpenCVForUnity.Range (currentFacePoints [0], currentFacePoints [2]);
+								vertRange = new OpenCVForUnity.Range (currentFacePoints [1], currentFacePoints [3]);
+								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
+								rgbaMat -= new Scalar (0, 0, 0, 100);
+								faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
+
+								//Imgproc.rectangle (rgbaMat, new Point (rects [0].x/resizeFactor, rects [0].y/resizeFactor), new Point ((rects [0].x/resizeFactor + rects [0].width/resizeFactor), (rects [0].y/resizeFactor + rects [0].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
+								//								rgbaMat.submat( rects [0]).copyTo (rgbMat.submat( rects [0]));
+//								rgbaMat -= new Scalar (0, 0, 0, 150);
+//								rgbMat.submat( rects [0]).copyTo (rgbaMat.submat( rects [0]));
+							} else {
+								if (frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
+									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
+									rgbaMat -= new Scalar(0, 0, 0, 100);
+									faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
+								}
+							}
+							
+						}
+
 						//trackBar
 						if (showTrackBar) {
 							//Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
@@ -801,38 +835,6 @@ namespace AeStatix
 
 								}
 							}
-						}
-						if (faceDetection) {
-
-							Core.flip (rgbaMat, rgbaMat, 1);
-
-							if (rects != null && rects.Length > 0) {
-
-
-								checkForFacesData ();
-
-								Debug.Log ("detect faces " + rects [0]);
-								Imgproc.resize (faceSubmat, faceSubmat, rects [0].size ());
-								//draw faces
-								//Core.bitwise_not( rgbaMat,rgbaMat);
-								horiRange = new OpenCVForUnity.Range (currentFacePoints [0], currentFacePoints [2]);
-								vertRange = new OpenCVForUnity.Range (currentFacePoints [1], currentFacePoints [3]);
-								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-								rgbaMat += new Scalar (50, 50, 50, 0);
-								faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
-
-								//Imgproc.rectangle (rgbaMat, new Point (rects [0].x/resizeFactor, rects [0].y/resizeFactor), new Point ((rects [0].x/resizeFactor + rects [0].width/resizeFactor), (rects [0].y/resizeFactor + rects [0].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
-								//								rgbaMat.submat( rects [0]).copyTo (rgbMat.submat( rects [0]));
-//								rgbaMat -= new Scalar (0, 0, 0, 150);
-//								rgbMat.submat( rects [0]).copyTo (rgbaMat.submat( rects [0]));
-							} else {
-								if (frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
-									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-									rgbaMat += new Scalar (50, 50, 50, 0);
-									faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
-								}
-							}
-							
 						}
 						Utils.matToTexture2D (rgbaMat, texture, colors);
 					}
