@@ -210,6 +210,9 @@ namespace AeStatix
 		CascadeClassifier cascade;
 		MatOfRect faces;
 		OpenCVForUnity.Rect[] rects;
+		List<int> displayFacePoints = new List<int>();
+		List<int> currentFacePoints = new List<int>();
+		bool facesFlag = false;
 		/////////////////////////////////
 
 		/// <summary>
@@ -282,6 +285,8 @@ namespace AeStatix
 
 		//submat
 		Mat submat;
+		//submat
+		Mat faceSubmat;
 
 		//copy mat GUI
 		Mat copyMat;
@@ -547,6 +552,10 @@ namespace AeStatix
 				submat.Dispose ();
 				submat = null;
 			}
+			if (faceSubmat != null) {
+				faceSubmat.Dispose ();
+				faceSubmat = null;
+			}
 			if (copyMat != null) {
 				copyMat.Dispose ();
 				copyMat = null;
@@ -617,6 +626,7 @@ namespace AeStatix
 
 			//faces
 			faces = new MatOfRect ();
+			faceSubmat = new Mat ();
 
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
@@ -778,17 +788,20 @@ namespace AeStatix
 							}
 						}
 						if (faceDetection) {
+
 							Core.flip (rgbaMat, rgbaMat, 1);
 
-							if(rects.Length > 0) {
+							if(rects != null && rects.Length > 0) {
+								checkForFacesData ();
+
 								Debug.Log ("detect faces " + rects [0]);
 								//draw faces
 								//Core.bitwise_not( rgbaMat,rgbaMat);
-								OpenCVForUnity.Range horiRange = new OpenCVForUnity.Range( (int)(rects[0].x/resizeFactor),(int)(rects[0].x/resizeFactor + rects[0].width/resizeFactor));
-								OpenCVForUnity.Range vertRange = new OpenCVForUnity.Range ((int)(rects [0].y / resizeFactor), (int)(rects [0].y / resizeFactor + rects [0].height / resizeFactor));
-								Mat submat = rgbaMat.submat (vertRange,horiRange);
-								rgbaMat -= new Scalar (0, 0, 0, 100);
-								submat.copyTo (rgbaMat.submat (vertRange,horiRange));
+								OpenCVForUnity.Range horiRange = new OpenCVForUnity.Range( currentFacePoints[0],currentFacePoints[2]);
+								OpenCVForUnity.Range vertRange = new OpenCVForUnity.Range (currentFacePoints[1],currentFacePoints[3]);
+								faceSubmat = rgbaMat.submat (vertRange,horiRange);
+								rgbaMat += new Scalar (50, 50, 50, 0);
+								faceSubmat.copyTo (rgbaMat.submat (vertRange,horiRange));
 
 								//Imgproc.rectangle (rgbaMat, new Point (rects [0].x/resizeFactor, rects [0].y/resizeFactor), new Point ((rects [0].x/resizeFactor + rects [0].width/resizeFactor), (rects [0].y/resizeFactor + rects [0].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
 								//								rgbaMat.submat( rects [0]).copyTo (rgbMat.submat( rects [0]));
@@ -854,6 +867,41 @@ namespace AeStatix
 				averageCenter.point = WeightedAverageThree (currentCenters [0].point, currentCenters [1].point, currentCenters [2].point);
 			}
 			centersFlag = true;
+
+		}
+		public void checkForFacesData(){
+			//check for first tiem frame processing - Initiate centers - place in the center
+			if(displayFacePoints == null){
+				displayFacePoints.Clear ();
+				//for (int o = 0; o <= 3; o++) {
+				displayFacePoints.Add ((int)Math.Round( rgbaMat.width () * 0.5));
+				displayFacePoints.Add ((int)Math.Round(rgbaMat.height () * 0.5));
+				displayFacePoints.Add (1);
+				displayFacePoints.Add (1);
+				//}
+			}
+
+			if (displayFacePoints!= null && currentFacePoints.Count == 0 || !facesFlag) {
+				currentFacePoints.Clear ();
+				//initiate currentCenters
+				for (int d = 0; d < displayFacePoints.Count; d++) {
+					currentFacePoints.Add ((int)Math.Round( rgbaMat.width () * 0.5));
+					currentFacePoints.Add ((int)Math.Round(rgbaMat.height () * 0.5));
+					currentFacePoints.Add (1);
+					currentFacePoints.Add (1);
+				}
+			}
+
+			// currentCenters step
+			if (displayFacePoints.Count > 1) {
+				for (int h = 0; h < displayFacePoints.Count; h++) {
+					currentFacePoints [h] = (int) Math.Round( speed * currentFacePoints [h] + displayFacePoints [h] * (1 - speed));
+					//currentFacePoints [h].y = speed * currentFacePoints [h].y + displayFacePoints [h].y * (1 - speed);
+				}
+
+
+			}
+			facesFlag = true;
 
 		}
 
@@ -1014,6 +1062,16 @@ namespace AeStatix
 							for (int i = 0; i < channels.Count; i++) {
 								displayCenters.Add (getCenterPointFromMat (channels [i], i));
 							}
+
+							//clear last faces
+							displayFacePoints.Clear ();
+							//add face point
+							displayFacePoints.Add ((int)(rects[0].x/resizeFactor));
+							displayFacePoints.Add ( (int)(rects [0].y / resizeFactor));
+							displayFacePoints.Add ( (int)(rects[0].x/resizeFactor + rects[0].width/resizeFactor));
+							displayFacePoints.Add ( (int)(rects [0].y / resizeFactor + rects [0].height / resizeFactor));
+
+
 						}
 						//end of copy
 					}
@@ -1036,7 +1094,7 @@ namespace AeStatix
 				point.x = map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData);
 				point.y = map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData);
 			} else {
-				point.x = map ((float)point.x, (float)resizeSize.width / 2  + (float)resizeSize.width, (float)resizeSize.width / 2  - (float)resizeSize.width, (float)webCamTexture.width/2 - (float)webCamTexture.width * exaggerateData , (float)webCamTexture.width/2 + (float)webCamTexture.width * exaggerateData  );
+				point.x = map ((float)point.x,  (float)resizeSize.width, 0,0, (float)webCamTexture.width);
 				point.y = map ((float)point.y, 0, (float)resizeSize.height, 0, (float)webCamTexture.height );
 			}
 			centersObj.Add(new Centers(channel, point) );
