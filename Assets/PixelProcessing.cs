@@ -236,6 +236,7 @@ namespace AeStatix
 		[SerializeField]
 		[Range(0,200)]
 		int roiFactor = 50;
+		List <UnityEngine.Rect> landmarkRects = new List<UnityEngine.Rect> ();
 		/////////////////////////////////
 
 		/// <summary>
@@ -871,11 +872,11 @@ namespace AeStatix
 						if (faceLandmarkPoints != null && faceLandmarkPoints.Count > 0) {
 							Debug.Log("faceLandmarkPoints : " + faceLandmarkPoints.Count);
 
-//							foreach (Vector2 _point in faceLandmarkPoints) {
-//								Point _cvPoint = new Point(_point.x,_point.y);
-//								Debug.Log ("point: " + _cvPoint.x + "," + _cvPoint.y); 
-//								Imgproc.circle (rgbaMat, new Point (_point.x, _point.y), 1, green, 1);
-//							}
+							foreach (Vector2 _point in faceLandmarkPoints) {
+								Point _cvPoint = new Point(_point.x,_point.y);
+								Debug.Log ("point: " + _cvPoint.x + "," + _cvPoint.y); 
+								Imgproc.circle (rgbaMat, new Point ((int)Math.Round( _point.x / resizeFactor),(int) Math.Round( _point.y/ resizeFactor)), 1, green, 1);
+							}
 						}
 
 						OpenCVForUnity.Utils.matToTexture2D (rgbaMat, texture, colors);
@@ -1092,9 +1093,9 @@ namespace AeStatix
 							//increase rect
 							rects [0].x -= roiFactor;
 							rects [0].y -= roiFactor;
-							rects[0].width += 2 * roiFactor;
-							rects[0].height += 2 * roiFactor;
-								
+							rects[0].width += 2* roiFactor;
+							rects[0].height += 2 *roiFactor;
+
 							lastFaceFrame = frameCount;
 							//faceRefMat.setTo(new Scalar (255,255,255));
 
@@ -1104,24 +1105,24 @@ namespace AeStatix
 							faceRefMat.create (rects [0].size(), CvType.CV_8UC3);
 							grayFaceMat.create (rects [0].size(), CvType.CV_8UC1);
 
-							resizeMat.submat( rects [0]).copyTo (faceRefMat);
+							resizeMat.submat(rects[0]).copyTo (faceRefMat);
 
 							//landmark detection
-							faceBytes = new byte[ faceRefMat.width() * faceRefMat.height() * 3];
-							OpenCVForUnity.Utils.copyFromMat (faceRefMat, faceBytes);
-							IntPtr pointer = Marshal.AllocHGlobal(faceBytes.Length);
-							Marshal.Copy (faceBytes, 0, pointer , faceBytes.Length);
-
-
-							faceLandmarkDetector.SetImage (pointer, faceRefMat.width (), faceRefMat.height (), 3, true);
-							//faceLandmarkDetector.SetImage<Color32> (landmarkColor, faceRefMat.width, faceRefMat.height, 4, true);
-
-							landmarkRect = new UnityEngine.Rect (rects [0].x , rects [0].y, rects [0].width , rects [0].height);
-							//face landmark
-							faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (landmarkRect);
-							//draw landmark points
-							//faceLandmarkDetector.DrawDetectLandmarkResult<Color32> (colors, webCamTexture.width, webCamTexture.height, 4, true, 0, 255, 0, 255);
-
+//							faceBytes = new byte[ faceRefMat.width() * faceRefMat.height() * 3];
+//							OpenCVForUnity.Utils.copyFromMat (faceRefMat, faceBytes);
+//							IntPtr pointer = Marshal.AllocHGlobal(faceBytes.Length);
+//							Marshal.Copy (faceBytes, 0, pointer , faceBytes.Length);
+//
+//							faceLandmarkDetector.SetImage (pointer, faceRefMat.width (), faceRefMat.height (), 3, true);
+//							//faceLandmarkDetector.SetImage<Color32> (landmarkColor, faceRefMat.width, faceRefMat.height, 4, true);
+//
+//
+//							//landmarkRect = new UnityEngine.Rect (rects [0].x , rects [0].y , rects [0].width , rects [0].height );
+//							//face landmark
+//							faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (landmarkRect);
+//							//draw landmark points
+//							//faceLandmarkDetector.DrawDetectLandmarkResult<Color32> (colors, webCamTexture.width, webCamTexture.height, 4, true, 0, 255, 0, 255);
+//
 
 							//flip values
 							Core.bitwise_not (faceRefMat, faceRefMat);
