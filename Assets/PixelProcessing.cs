@@ -817,8 +817,10 @@ namespace AeStatix
 								horiRange = new OpenCVForUnity.Range (currentFacePoints [0], currentFacePoints [2]);
 								vertRange = new OpenCVForUnity.Range (currentFacePoints [1], currentFacePoints [3]);
 								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-								rgbaMat -= new Scalar (0, 0, 0, 100);
-								faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
+								//rgbaMat -= new Scalar (0, 0, 0, 100);
+								//faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
+
+								faceSubmat -= new Scalar (0, 0, 0, 50);
 
 								//Imgproc.rectangle (rgbaMat, new Point (rects [0].x/resizeFactor, rects [0].y/resizeFactor), new Point ((rects [0].x/resizeFactor + rects [0].width/resizeFactor), (rects [0].y/resizeFactor + rects [0].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
 								//								rgbaMat.submat( rects [0]).copyTo (rgbMat.submat( rects [0]));
@@ -827,8 +829,8 @@ namespace AeStatix
 							} else {
 								if (frameCount >= 15 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
 									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-									rgbaMat -= new Scalar (0, 0, 0, 100);
-									faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
+									faceSubmat -= new Scalar (0, 0, 0, 50);
+									//faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
 								}
 							}
 							
@@ -1096,6 +1098,21 @@ namespace AeStatix
 							rects[0].width += 2* roiFactor;
 							rects[0].height += 2 *roiFactor;
 
+							Debug.Log (" rects [0].x " + rects [0].x + "\n" +
+								" rects [0].y " + rects [0].y + "\n" +
+								" rects [0].width " + rects [0].width+ "\n" +
+								" rects [0].height " + rects [0].height);
+							
+							rects [0].x = (rects [0].x < 0) ? 0 : rects [0].x;
+							rects [0].y = (rects [0].y < 0) ? 0 : rects [0].y;
+							rects[0].width = (rects [0].x + rects [0].width > resizeMat.width()) ? resizeMat.width() - rects [0].x : rects [0].width;
+							rects[0].height = (rects [0].y + rects [0].height > resizeMat.height()) ? resizeMat.height() - rects [0].y : rects [0].height;
+
+							Debug.Log ("after rects [0].x " + rects [0].x + "\n" +
+								"after rects [0].y " + rects [0].y + "\n" +
+								"after rects [0].width " + rects [0].width+ "\n" +
+								"after rects [0].height " + rects [0].height);
+							
 							lastFaceFrame = frameCount;
 							//faceRefMat.setTo(new Scalar (255,255,255));
 
