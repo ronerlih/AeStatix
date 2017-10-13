@@ -238,6 +238,18 @@ namespace AeStatix
 		[SerializeField]
 		[Range(0,200)]
 		int roiFactor = 50;
+		[SerializeField]
+		[Range(0,5)]
+		float landmarkX = 1;
+		[SerializeField]
+		[Range(0,5)]
+		float landmarkY = 1;
+		[SerializeField]
+		[Range(0,5)]
+		float landmarkWidth = 1;
+		[SerializeField]
+		[Range(0,5)]
+		float landmarkHeight = 1;
 		List <UnityEngine.Rect> landmarkRects = new List<UnityEngine.Rect> ();
 		List< MatOfPoint> MOP = new List< MatOfPoint>();
 		IntPtr pointer;
@@ -404,8 +416,8 @@ namespace AeStatix
 			StartCoroutine (getFilePath_Coroutine);
 			#else
 			cascade = new CascadeClassifier ();
-			cascade = new CascadeClassifier (OpenCVForUnity.Utils.getFilePath ("lbpcascade_frontalface.xml"));
-//			cascade.load (OpenCVForUnity.Utils.getFilePath ("haarcascade_frontalface_alt.xml"));
+			//cascade = new CascadeClassifier (OpenCVForUnity.Utils.getFilePath ("lbpcascade_frontalface.xml"));
+			cascade.load (OpenCVForUnity.Utils.getFilePath ("haarcascade_frontalface_alt.xml"));
 
 			//face landmark data set
 			shape_predictor_68_face_landmarks_dat_filepath = OpenCVForUnity.Utils.getFilePath ("shape_predictor_68_face_landmarks_for_mobile.dat");
@@ -902,6 +914,9 @@ namespace AeStatix
 								//	rgbaMat.rowRange (vertRange).colRange (horiRange) -= new Scalar(0,0,0,50) ;
 
 									//faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
+								}else{
+									if(landmark)
+									faceLandmarkPoints.Clear();
 								}
 							}
 							
@@ -945,15 +960,18 @@ namespace AeStatix
 						if (faceLandmarkPoints != null && faceLandmarkPoints.Count > 0) {
 							Debug.Log("faceLandmarkPoints : " + faceLandmarkPoints.Count);
 
-
+							//DRAW LANDMARK: manually
 							foreach (Vector2 _point in faceLandmarkPoints) {
 								Point _cvPoint = new Point(_point.x,_point.y);
 								Debug.Log ("point: " + _cvPoint.x + "," + _cvPoint.y); 
 								Imgproc.circle (rgbaMat, new Point ((int)Math.Round( _point.x / resizeFactor),(int) Math.Round( _point.y/ resizeFactor)), 1, green, 2);
 							}
+							OpenCVForUnityUtils.DrawFaceLandmark (rgbaMat,faceLandmarkPoints, green,1);
+
 						}
-					
 						OpenCVForUnity.Utils.matToTexture2D (rgbaMat, texture, colors);
+
+						//DRAW LANDMARK: with color buffer
 //						faceLandmarkDetector.DrawDetectLandmarkResult<Color32> (colors, webCamTexture.width,webCamTexture.height,4,true ,0, 255, 0, 255);
 //
 //						texture.SetPixels32 (colors);
@@ -1195,21 +1213,26 @@ namespace AeStatix
 							resizeMat.submat(rects[0]).copyTo (faceRefMat);
 
 							//landmark detection
+							// SET IMAGE BY: pointer
 
-//							//marshal boilerplate image pointers 
-//							faceBytes = new byte[ grayFaceMat.width() * grayFaceMat.height() * 1];
-//							OpenCVForUnity.Utils.copyFromMat (grayFaceMat, faceBytes);
+							//marshal boilerplate image pointers 
+//							faceBytes = new byte[ grayFaceMat.width() * grayFaceMat.height() * 3];
+//							OpenCVForUnity.Utils.copyFromMat (faceRefMat, faceBytes);
 //							pointer = Marshal.AllocHGlobal(faceBytes.Length);
 //							Marshal.Copy (faceBytes, 0, pointer , faceBytes.Length);
+// 
+//							faceLandmarkDetector.SetImage (pointer, grayFaceMat.width (), grayFaceMat.height (), 3, true);
 
-							OpenCVForUnityUtils.SetImage (faceLandmarkDetector, grayFaceMat);
-							//faceLandmarkDetector.SetImage (pointer, faceRefMat.width (), faceRefMat.height (), 1, true);
+							//SET IMAGE BY: color buffer
+
 //							webCamTexture.GetPixels32 (colors);
 //							faceLandmarkDetector.SetImage<Color32> (colors, webCamTexture.width, webCamTexture.height, 4, true);
-//
+
+							//// SET IMAGE BY: OpenCVForUnityUtils
+														OpenCVForUnityUtils.SetImage (faceLandmarkDetector, grayFaceMat);
 //
 						
-							landmarkRect = new UnityEngine.Rect (rects [0].x + roiFactor  , rects [0].y + roiFactor, rects [0].width - (2*roiFactor) , rects [0].height - (2*roiFactor));
+							landmarkRect = new UnityEngine.Rect ((int)Math.Round(rects [0].x + (landmarkX *roiFactor))  , (int)Math.Round( rects [0].y + (landmarkY*roiFactor)), (int)Math.Round(rects [0].width - (landmarkWidth*roiFactor)) , (int)Math.Round(rects [0].height - (landmarkHeight*roiFactor)));
 //							landmarkRect = new UnityEngine.Rect (0  , 0 , grayFaceMat.width() , grayFaceMat.height() );
 
 							if (landmark) {
@@ -1218,6 +1241,7 @@ namespace AeStatix
 								//face landmark
 								faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (landmarkRect);
 							}
+
 							//faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (0  , 0, webCamTexture.width , webCamTexture.height );
 							//faceLandmarkPoints = faceLandmarkDetector.DetectLandmarkArray (0, 0, webCamTexture.width, webCamTexture.height);
 
