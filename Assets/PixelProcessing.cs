@@ -256,6 +256,9 @@ namespace AeStatix
 		byte[] vectorByte = new byte[4];
 		[SerializeField]
 		bool landmark = false;
+		Point[] landmarkArrayPoints = new Point[68];
+		Point[] landmarkArrayPointsCurrent;
+		bool landmarkFlag = false;
 		/////////////////////////////////
 
 		/// <summary>
@@ -692,7 +695,7 @@ namespace AeStatix
 			MOP.Add (new MatOfPoint ());
 			faceSubmat = Mat.zeros(webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			polyMask = new Mat ();
-
+			landmarkArrayPointsCurrent = new Point[28];
 
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
@@ -849,8 +852,9 @@ namespace AeStatix
 								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
 
 								MOP.Clear ();
-								//MOP.Add (new MatOfPoint ());
-
+								if (landmarkArrayPointsCurrent [0] != null){
+									MOP.Add (new MatOfPoint ( landmarkArrayPointsCurrent));
+								}
 								//int mopCounter = 0;
 
 									//faceLandmarkPoints.
@@ -868,7 +872,7 @@ namespace AeStatix
 
 							//	Debug.Log ("landmark points: " + MOP [0].total());
 								polyMask = Mat.ones(faceSubmat.size(), CvType.CV_8U);
-								//Imgproc.fillPoly (polyMask, MOP, new Scalar (0));
+								Imgproc.fillPoly (polyMask, MOP, new Scalar (0));
 
 								//heat map ref
 								//faceSubmat -= (new Scalar (50, 50, 50, 0));
@@ -915,7 +919,8 @@ namespace AeStatix
 
 									//faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
 								}else{
-									if(landmark)
+									//TO-DO: clear lamdmarkpointsArray
+									if(landmark && faceLandmarkPoints != null)
 									faceLandmarkPoints.Clear();
 								}
 							}
@@ -960,13 +965,15 @@ namespace AeStatix
 						if (faceLandmarkPoints != null && faceLandmarkPoints.Count > 0) {
 							Debug.Log("faceLandmarkPoints : " + faceLandmarkPoints.Count);
 
-							//DRAW LANDMARK: manually
-							foreach (Vector2 _point in faceLandmarkPoints) {
-								Point _cvPoint = new Point(_point.x,_point.y);
-								Debug.Log ("point: " + _cvPoint.x + "," + _cvPoint.y); 
-								Imgproc.circle (rgbaMat, new Point ((int)Math.Round( _point.x / resizeFactor),(int) Math.Round( _point.y/ resizeFactor)), 1, green, 2);
-							}
-							OpenCVForUnityUtils.DrawFaceLandmark (rgbaMat,faceLandmarkPoints, green,1);
+//							//DRAW LANDMARK: manually
+//							foreach (Vector2 _point in faceLandmarkPoints) {
+//								Point _cvPoint = new Point(_point.x,_point.y);
+//								Debug.Log ("point: " + _cvPoint.x + "," + _cvPoint.y); 
+//								Imgproc.circle (rgbaMat, new Point ((int)Math.Round( _point.x / resizeFactor),(int) Math.Round( _point.y/ resizeFactor)), 1, green, 2);
+//							}
+
+							//OPENCVUTILS: landmarks drawing
+							//OpenCVForUnityUtils.DrawFaceLandmark (rgbaMat,faceLandmarkPoints, green,1);
 
 						}
 						OpenCVForUnity.Utils.matToTexture2D (rgbaMat, texture, colors);
@@ -1049,6 +1056,8 @@ namespace AeStatix
 				displayFacePoints.Add ( new Point((int)((rects[0].x + rects[0].width) / resizeFactor),(int)(rects[0].y / resizeFactor)));
 				displayFacePoints.Add ( new Point((int)((rects[0].x + rects[0].width) / resizeFactor),(int)((rects[0].y + rects[0].height) / resizeFactor)));
 				displayFacePoints.Add ( new Point((int)(rects[0].x / resizeFactor), (int)((rects[0].y + rects[0].height) / resizeFactor)));
+
+
 				//}
 			}
 			//initiate currentCenters
@@ -1060,7 +1069,10 @@ namespace AeStatix
 					currentFacePoints.Add (displayFacePoints [displayListCounter]);
 					displayListCounter++;
 				}
+
 			}
+
+
 			// currentCenters step
 			if (displayFacePoints.Count > 1) {
 				int listCounter = 0;
@@ -1070,6 +1082,38 @@ namespace AeStatix
 					listCounter++;
 				}
 			}
+				//init landmark
+			if (landmark &&landmarkArrayPoints[0]!=null && !landmarkFlag ) {
+
+				int lmCount = 0;
+				foreach (Point _p in landmarkArrayPoints) {
+					if (lmCount < 28) {
+						landmarkArrayPointsCurrent [lmCount] = new Point ((int)Math.Round(landmarkArrayPoints [lmCount].x),(int)Math.Round (landmarkArrayPoints [lmCount].y));
+						lmCount++;
+					}
+				}
+					landmarkFlag = true;
+				}
+				//landmark step
+			if (landmark && landmarkFlag && landmarkArrayPointsCurrent[0] != null) {
+				Debug.Log ("landmarkArrayPointsCurrent: " + landmarkArrayPointsCurrent[0].ToString());
+					//for (int lmI = 0; lmI < landmarkArrayPoints.Length; lmI++) {
+				for (int lmI = 0; lmI <= 27; lmI++) {
+						if (lmI <= 16) {
+							landmarkArrayPointsCurrent [lmI] = new Point ((int)Math.Round (speed * landmarkArrayPointsCurrent [lmI].x + landmarkArrayPoints [lmI].x * (1 - speed)), (int)Math.Round (speed * landmarkArrayPointsCurrent [lmI].y + landmarkArrayPoints [lmI].y * (1 - speed)));
+						}
+						if (lmI > 21 && lmI < 27) {
+							landmarkArrayPointsCurrent [lmI - 5] = new Point ((int)Math.Round (speed * landmarkArrayPointsCurrent [lmI - 5].x + landmarkArrayPoints [lmI].x * (1 - speed)), (int)Math.Round (speed * landmarkArrayPointsCurrent [lmI].y + landmarkArrayPoints [lmI].y * (1 - speed)));
+						}
+						if (lmI > 16 && lmI <= 21) {
+							landmarkArrayPointsCurrent [lmI + 5] = new Point ((int)Math.Round (speed * landmarkArrayPointsCurrent [lmI + 5].x + landmarkArrayPoints [lmI].x * (1 - speed)), (int)Math.Round (speed * landmarkArrayPointsCurrent [lmI].y + landmarkArrayPoints [lmI].y * (1 - speed)));
+					}						
+					if (lmI == 27) {
+						landmarkArrayPointsCurrent [27] = landmarkArrayPointsCurrent [0];
+					}
+					}
+				}
+			
 			facesFlag = true;
 
 		}
@@ -1297,6 +1341,31 @@ namespace AeStatix
 							displayFacePoints.Add ( new Point((int)((rects[0].x + rects[0].width) / resizeFactor),(int)((rects[0].y + rects[0].height) / resizeFactor)));
 							displayFacePoints.Add ( new Point((int)(rects[0].x / resizeFactor), (int)((rects[0].y + rects[0].height) / resizeFactor)));
 
+							if (landmark) {
+								//faceLandmarkPoints
+//								int ResizedToRectDiffWidth = (int)Math.Round(landmarkRect.x  );
+//								int ResizedToRectDiffHeight = (int)Math.Round( landmarkRect.y );
+								for(int l = 0; l< faceLandmarkPoints.Count;l++){
+//									//mapped
+//									landmarkArrayPoints [l] = new Point ((int)Math.Round(map( faceLandmarkPoints [l].x,0,(float)resizeSize.width,0,frameWidth))
+//										,(int)Math.Round(map( faceLandmarkPoints [l].y,0,(float)resizeSize.height,0,frameHeight)));
+									//straight
+//									landmarkArrayPoints [l] = new Point ((int)Math.Round(faceLandmarkPoints [l].x)
+//																			,(int)Math.Round( faceLandmarkPoints [l].y));
+									//changed
+									landmarkArrayPoints [l] = new Point ((faceLandmarkPoints [l].x - rects[0].x)/resizeFactor
+										,(faceLandmarkPoints [l].y - rects[0].y )/resizeFactor);
+									
+									//factor
+//									landmarkArrayPoints [l] = new Point ( (int)Math.Round((faceLandmarkPoints [l].x + ResizedToRectDiffWidth) ) 
+//										,(int)Math.Round( (( faceLandmarkPoints [l].y) + ResizedToRectDiffHeight ) ));
+//									landmarkArrayPoints [l] = new Point ( (int)Math.Round((faceLandmarkPoints [l].x )- (resizeSize.width - landmarkRect.x )/resizeFactor ) 
+//										,(int)Math.Round( (( faceLandmarkPoints [l].y)  ) - (resizeSize.height  - landmarkRect.y ))/resizeFactor);
+//									Debug.Log (" faceLandmarkPoints [l].x: " + faceLandmarkPoints [l].x);
+//									Debug.Log (" landmarkArrayPoints [l].x: " + landmarkArrayPoints [l].x);
+
+								}
+							}
 						}
 						//end of copy
 					}
