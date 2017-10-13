@@ -232,6 +232,7 @@ namespace AeStatix
 		/// </summary>
 		string shape_predictor_68_face_landmarks_dat_filepath;
 		List<Vector2> faceLandmarkPoints;
+		List<MatOfPoint> landmarkPoints;
 		UnityEngine.Rect landmarkRect;
 		byte[] faceBytes;
 		[SerializeField]
@@ -239,6 +240,10 @@ namespace AeStatix
 		int roiFactor = 50;
 		List <UnityEngine.Rect> landmarkRects = new List<UnityEngine.Rect> ();
 		List< MatOfPoint> MOP = new List< MatOfPoint>();
+		IntPtr pointer;
+		byte[] vectorByte = new byte[4];
+		[SerializeField]
+		bool landmark = false;
 		/////////////////////////////////
 
 		/// <summary>
@@ -400,13 +405,14 @@ namespace AeStatix
 			#else
 			cascade = new CascadeClassifier ();
 			cascade = new CascadeClassifier (OpenCVForUnity.Utils.getFilePath ("lbpcascade_frontalface.xml"));
+//			cascade.load (OpenCVForUnity.Utils.getFilePath ("haarcascade_frontalface_alt.xml"));
 
 			//face landmark data set
 			shape_predictor_68_face_landmarks_dat_filepath = OpenCVForUnity.Utils.getFilePath ("shape_predictor_68_face_landmarks_for_mobile.dat");
-			faceLandmarkDetector = new FaceLandmarkDetector (shape_predictor_68_face_landmarks_dat_filepath);
-			// shape_predictor_68_face_landmarks_dat_filepath = Utils.getFilePath ("shape_predictor_68_face_landmarks.dat");
+			//shape_predictor_68_face_landmarks_dat_filepath = OpenCVForUnity.Utils.getFilePath ("shape_predictor_68_face_landmarks.dat");
 
-			//cascade.load (Utils.getFilePath ("haarcascade_frontalface_alt.xml"));
+			faceLandmarkDetector = new FaceLandmarkDetector (shape_predictor_68_face_landmarks_dat_filepath);
+
 
 			//            if (cascade.empty ()) {
 			//                Debug.LogError ("cascade file is not loaded.Please copy from “OpenCVForUnity/StreamingAssets/” to “Assets/StreamingAssets/” folder. ");
@@ -674,6 +680,8 @@ namespace AeStatix
 			MOP.Add (new MatOfPoint ());
 			faceSubmat = Mat.zeros(webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			polyMask = new Mat ();
+
+
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
 				GUItexture = new Texture2D ((int)resizeSize.width, (int)resizeSize.height, TextureFormat.RGBA32, false);
@@ -825,10 +833,34 @@ namespace AeStatix
 								//Core.bitwise_not( rgbaMat,rgbaMat);
 								horiRange = new OpenCVForUnity.Range ((int)currentFacePoints [0].x, (int)currentFacePoints [1].x);
 								vertRange = new OpenCVForUnity.Range ((int)currentFacePoints [0].y, (int)currentFacePoints [2].y);
-								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-								polyMask = Mat.ones(faceSubmat.size(), CvType.CV_8U);
 
-								faceSubmat -= (new Scalar (255, 255, 255, 100));
+								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
+
+								MOP.Clear ();
+								//MOP.Add (new MatOfPoint ());
+
+								//int mopCounter = 0;
+
+									//faceLandmarkPoints.
+//								foreach (Vector2 _vector in faceLandmarkPoints) {
+//									MOP [0].put ((int)_vector.y, (int)_vector.x, vectorByte);
+//								}
+//										new MatOfPoint(new Point(_vector.x,_vector.y)));
+//									}
+										
+//									Debug.Log ("mop: " + MOP [mopCounter].ToString ());
+//									mopCounter++;
+
+
+								//MOP[0].fromList (faceLandmarkPoints);
+
+							//	Debug.Log ("landmark points: " + MOP [0].total());
+								polyMask = Mat.ones(faceSubmat.size(), CvType.CV_8U);
+								//Imgproc.fillPoly (polyMask, MOP, new Scalar (0));
+
+								//heat map ref
+								//faceSubmat -= (new Scalar (50, 50, 50, 0));
+								faceSubmat -= (new Scalar (0, 0, 0, 100));
 								Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange),polyMask);
 								//Core.addWeighted (rgbaMat.colRange (horiRange).rowRange (vertRange), 0.8, faceSubmat, 0.2,0,rgbaMat.colRange (horiRange).rowRange (vertRange));
 								//faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
@@ -837,9 +869,7 @@ namespace AeStatix
 
 								//faceSubmat.setTo( new Scalar (0, 0, 0, 0));
 
-//								MOP.Clear ();
-//								MOP.Add (new MatOfPoint ());
-//								MOP[0].fromList (currentFacePoints);
+
 
 								//Imgproc.fillPoly(faceSubmat,MOP, new Scalar(50,50,50,100));
 
@@ -852,13 +882,20 @@ namespace AeStatix
 //								rgbMat.submat( rects [0]).copyTo (rgbaMat.submat( rects [0]));
 							} else {
 								if (frameCount >= 15 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
-									//MOP[0].fromList (currentFacePoints);
+
+//									foreach (Vector2 _vector in faceLandmarkPoints) {
+//										//faceLandmarkPoints.
+//										MOP.Add(new MatOfPoint(new Point(_vector.x,_vector.y)));
+//									}
 
 									//Imgproc.fillPoly(rgbaMat,MOP, new Scalar(50,50,50,100));
 
 									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
+									polyMask = Mat.ones(faceSubmat.size(), CvType.CV_8U);
+									//Imgproc.fillPoly (polyMask, MOP, new Scalar (0));
+
 									faceSubmat -= (new Scalar (0, 0, 0, 100));
-									Core.addWeighted (rgbaMat.colRange (horiRange).rowRange (vertRange), 0.8, faceSubmat, 0.2,0,rgbaMat.colRange (horiRange).rowRange (vertRange));
+									Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange),polyMask);
 
 									//faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
 									//faceSubmat -= new Scalar (0, 0, 0, 50);
@@ -908,14 +945,22 @@ namespace AeStatix
 						if (faceLandmarkPoints != null && faceLandmarkPoints.Count > 0) {
 							Debug.Log("faceLandmarkPoints : " + faceLandmarkPoints.Count);
 
+
 							foreach (Vector2 _point in faceLandmarkPoints) {
 								Point _cvPoint = new Point(_point.x,_point.y);
 								Debug.Log ("point: " + _cvPoint.x + "," + _cvPoint.y); 
-								Imgproc.circle (rgbaMat, new Point ((int)Math.Round( _point.x / resizeFactor),(int) Math.Round( _point.y/ resizeFactor)), 1, green, 1);
+								Imgproc.circle (rgbaMat, new Point ((int)Math.Round( _point.x / resizeFactor),(int) Math.Round( _point.y/ resizeFactor)), 1, green, 2);
 							}
 						}
-
+					
 						OpenCVForUnity.Utils.matToTexture2D (rgbaMat, texture, colors);
+//						faceLandmarkDetector.DrawDetectLandmarkResult<Color32> (colors, webCamTexture.width,webCamTexture.height,4,true ,0, 255, 0, 255);
+//
+//						texture.SetPixels32 (colors);
+//						texture.Apply ();
+
+
+						//faceLandmarkDetector.DrawDetectResult (texture, 0, 255, 0, 255,1);
 
 					}
 				} else {
@@ -1117,7 +1162,7 @@ namespace AeStatix
 
 						if (cascade != null)
 							cascade.detectMultiScale2 (grayMat, faces,numOfFaces, 1.1, 2, 2, 
-								new Size (20, 20), new Size ());
+								new Size (30, 30), new Size ());
 
 						rects = faces.toArray ();
 
@@ -1150,20 +1195,34 @@ namespace AeStatix
 							resizeMat.submat(rects[0]).copyTo (faceRefMat);
 
 							//landmark detection
-//							faceBytes = new byte[ faceRefMat.width() * faceRefMat.height() * 3];
-//							OpenCVForUnity.Utils.copyFromMat (faceRefMat, faceBytes);
-//							IntPtr pointer = Marshal.AllocHGlobal(faceBytes.Length);
+
+//							//marshal boilerplate image pointers 
+//							faceBytes = new byte[ grayFaceMat.width() * grayFaceMat.height() * 1];
+//							OpenCVForUnity.Utils.copyFromMat (grayFaceMat, faceBytes);
+//							pointer = Marshal.AllocHGlobal(faceBytes.Length);
 //							Marshal.Copy (faceBytes, 0, pointer , faceBytes.Length);
+
+							OpenCVForUnityUtils.SetImage (faceLandmarkDetector, grayFaceMat);
+							//faceLandmarkDetector.SetImage (pointer, faceRefMat.width (), faceRefMat.height (), 1, true);
+//							webCamTexture.GetPixels32 (colors);
+//							faceLandmarkDetector.SetImage<Color32> (colors, webCamTexture.width, webCamTexture.height, 4, true);
 //
-//							faceLandmarkDetector.SetImage (pointer, faceRefMat.width (), faceRefMat.height (), 3, true);
-//							//faceLandmarkDetector.SetImage<Color32> (landmarkColor, faceRefMat.width, faceRefMat.height, 4, true);
 //
-//
-//							//landmarkRect = new UnityEngine.Rect (rects [0].x , rects [0].y , rects [0].width , rects [0].height );
-//							//face landmark
-//							faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (landmarkRect);
-//							//draw landmark points
-//							//faceLandmarkDetector.DrawDetectLandmarkResult<Color32> (colors, webCamTexture.width, webCamTexture.height, 4, true, 0, 255, 0, 255);
+						
+							landmarkRect = new UnityEngine.Rect (rects [0].x + roiFactor  , rects [0].y + roiFactor, rects [0].width - (2*roiFactor) , rects [0].height - (2*roiFactor));
+//							landmarkRect = new UnityEngine.Rect (0  , 0 , grayFaceMat.width() , grayFaceMat.height() );
+
+							if (landmark) {
+
+								Debug.Log ("inside landmark rects");
+								//face landmark
+								faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (landmarkRect);
+							}
+							//faceLandmarkPoints = faceLandmarkDetector.DetectLandmark (0  , 0, webCamTexture.width , webCamTexture.height );
+							//faceLandmarkPoints = faceLandmarkDetector.DetectLandmarkArray (0, 0, webCamTexture.width, webCamTexture.height);
+
+							//draw landmark points
+//							faceLandmarkDetector.DrawDetectLandmarkResult<Color32> (colors, webCamTexture.width, webCamTexture.height, 4, true, 0, 255, 0, 255);
 //
 
 							//flip values
@@ -1209,10 +1268,6 @@ namespace AeStatix
 							//clear last faces
 							displayFacePoints.Clear ();
 							//add face point
-//							displayFacePoints.Add ((int)(rects[0].x/resizeFactor));
-//							displayFacePoints.Add ( (int)(rects [0].y / resizeFactor));
-//							displayFacePoints.Add ( (int)(rects[0].x/resizeFactor + rects[0].width/resizeFactor));
-//							displayFacePoints.Add ( (int)(rects [0].y / resizeFactor + rects [0].height / resizeFactor));
 							displayFacePoints.Add ( new Point((int)(rects[0].x / resizeFactor),(int)(rects[0].y / resizeFactor)));
 							displayFacePoints.Add ( new Point((int)((rects[0].x + rects[0].width) / resizeFactor),(int)(rects[0].y / resizeFactor)));
 							displayFacePoints.Add ( new Point((int)((rects[0].x + rects[0].width) / resizeFactor),(int)((rects[0].y + rects[0].height) / resizeFactor)));
