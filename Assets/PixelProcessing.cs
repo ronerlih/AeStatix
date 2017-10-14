@@ -794,19 +794,16 @@ namespace AeStatix
 								//Core.bitwise_not( rgbaMat,rgbaMat);
 								horiRange = new OpenCVForUnity.Range (currentFacePoints [0], currentFacePoints [2]);
 								vertRange = new OpenCVForUnity.Range (currentFacePoints [1], currentFacePoints [3]);
-								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-								rgbaMat -= new Scalar (0, 0, 0, 100);
-								faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
 
-								//Imgproc.rectangle (rgbaMat, new Point (rects [0].x/resizeFactor, rects [0].y/resizeFactor), new Point ((rects [0].x/resizeFactor + rects [0].width/resizeFactor), (rects [0].y/resizeFactor + rects [0].height/resizeFactor)), new Scalar (255, 0, 0, 255), 2);
-								//								rgbaMat.submat( rects [0]).copyTo (rgbMat.submat( rects [0]));
-//								rgbaMat -= new Scalar (0, 0, 0, 150);
-//								rgbMat.submat( rects [0]).copyTo (rgbaMat.submat( rects [0]));
+								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
+								faceSubmat -= new Scalar (0, 0, 0, 100);
+								Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
+							
 							} else {
 								if (frameCount >= 15 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
 									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-									rgbaMat -= new Scalar(0, 0, 0, 100);
-									faceSubmat.copyTo (rgbaMat.submat (vertRange, horiRange));
+									faceSubmat -= new Scalar (0, 0, 0, 100);
+									Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
 								}
 							}
 							
