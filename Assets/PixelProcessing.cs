@@ -741,7 +741,7 @@ namespace AeStatix
 						if (snapToCenter) {
 							SnapToCenters ();
 						}
-
+							
 						checkForCentersData ();
 
 						//to do: print values in face detection only when face is on 
@@ -811,10 +811,14 @@ namespace AeStatix
 
 						//trackBar
 						if (showTrackBar) {
-							//Imgproc.fillPoly (rgbaMat, triangleTrack, trackColor,Imgproc.LINE_AA,0,new Point(0,0));
 							if (currentCenters [0] != null) {
 								precentageToCenter = TrackbarDiff (averageCenter.point);
-								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), barColor, Imgproc.LINE_AA, 0, new Point (0, 0));
+								//trackbar colors debug
+//								Debug.Log ("percent from center: " +precentageToCenter+
+//									"r: " + (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ) + "\n" +
+//									"G : " + (int)Math.Round ((precentageToCenter*precentageToCenter) * 235) + "\n" +
+//								"B : 0");
+								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), new Scalar( (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ),(int)Math.Round ((precentageToCenter*precentageToCenter) * 235) ,0,255)  , Imgproc.LINE_AA, 0, new Point (0, 0));
 							}
 						}
 						if (cross) {
@@ -935,6 +939,10 @@ namespace AeStatix
 
 		}
 
+		////////////
+		/// A-Sync Frame Processing
+		///////////
+
 		private IEnumerator processFrame(){
 			while (true && webCamTexture.width > 100) {
 
@@ -943,7 +951,11 @@ namespace AeStatix
 					resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 
 					frameProcessingInit = true;
-					//resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
+
+					////////////
+					/// file Uplaod
+					///////////
+
 					if (fileUpload != null) {
 
 						fileUploadFlag = true;
@@ -963,18 +975,18 @@ namespace AeStatix
 						if (fileTexture == null || fileTexture.width != fileUpload.width || fileTexture.height != fileUpload.height)
 							fileTexture = new Texture2D (fileUpload.width, fileUpload.height, TextureFormat.RGBA32, false);
 
-
-						//set as main tex
-					//	gameObject.GetComponent<Renderer> ().material.mainTexture = fileTexture;
-
+//						fileUploadMat = new Mat (fileTexture.height, fileTexture.width, CvType.CV_8UC3);
+//
+//						Utils.texture2DToMat (fileTexture, fileUploadMat);
+//						Imgproc.resize (fileUploadMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
 						fileTexture.LoadImage (fileUploadData);
 						fileUploadMat = new Mat (fileTexture.height, fileTexture.width, CvType.CV_8UC3);
 
-						Utils.texture2DToMat (fileTexture, fileUploadMat);
-					//	Utils.matToTexture2D (fileUploadMat, fileUpload, fileColors);
+						OpenCVForUnity.Utils.texture2DToMat (fileTexture, fileUploadMat);
+						//	Utils.matToTexture2D (fileUploadMat, fileUpload, fileColors);
 						Imgproc.resize (fileUploadMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
 
-						//Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+
 					} else {
 							if (fileUploadFlag) {
 							//return texture to camera after file upload
@@ -982,8 +994,11 @@ namespace AeStatix
 							fileUploadFlag = false;
 							}
 						Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
-
 					}
+
+					////////////
+					/// Process frame
+					///////////
 
 					if (!faceDetection) {
 
@@ -992,7 +1007,7 @@ namespace AeStatix
 
 						//edge detection and wights
 						if (edgeBias) {
-							grayMat = resizeMat.clone ();
+							grayMat = resizeMat.clone();
 							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
 
 							Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
@@ -1000,7 +1015,6 @@ namespace AeStatix
 							if (thresh) {
 								Imgproc.threshold (grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY);
 							}
-
 
 							//weights
 							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_GRAY2RGB);
@@ -1015,6 +1029,8 @@ namespace AeStatix
 						}
 
 						//split channels
+						//Imgproc.cvtColor (resizeMat, resizeMat, Imgproc.COLOR_RGB2BGR);
+
 						Core.split (resizeMat, channels);
 
 						//clear last cenbters
@@ -1051,7 +1067,7 @@ namespace AeStatix
 							lastFaceFrame = frameCount;
 							faceRefMat.setTo(new Scalar (255,255,255));
 
-							Debug.Log ("detect faces " + rects [0]);
+//							Debug.Log ("detect faces " + rects [0]);
 
 							//change mat sizes
 							faceRefMat.create (rects [0].size(), CvType.CV_8UC3);
@@ -1130,8 +1146,8 @@ namespace AeStatix
 				point.x = map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData);
 				point.y = map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData);
 			} else {
-				point.x = webCamTexture.width - (point.x + rects [0].x) / resizeFactor;
-				point.y = (point.y + rects [0].y) / resizeFactor;
+				point.x = (webCamTexture.width - (point.x + rects [0].x) / resizeFactor );
+				point.y = (point.y + rects [0].y) / resizeFactor ;
 //				point.x = map ((float)point.x, (float)faceRefMat.width(),0, (float)rects[0].x / resizeFactor,  (float)(rects[0].width + (float)rects[0].x )/ resizeFactor);
 //				point.y = map ((float)point.y, 0, (float)faceRefMat.height(), (float)rects[0].y / resizeFactor, (float)rects[0].height / resizeFactor );
 			}
@@ -1311,9 +1327,43 @@ namespace AeStatix
 		}
 		public float TrackbarDiff(Point _current){
 
-			trackbarDiffFloat = (float)(Math.Sqrt ((
-				(_current.x - ( frameWidth/2) ) * (_current.x - (frameWidth/2) )) + ((_current.y - (frameHeight/2) ) * (_current.y-(frameHeight/2) ))) );
+			if (!faceDetection) {
+				totalDistance = (float)Math.Sqrt (((rgbMat.width () / 2) * (rgbMat.width () / 2)) + ((rgbMat.height () / 2) * (rgbMat.height () / 2)));
 
+				trackbarDiffFloat = (float)(Math.Sqrt ((
+				    (_current.x - (frameWidth / 2)) * (_current.x - (frameWidth / 2))) + ((_current.y - (frameHeight / 2)) * (_current.y - (frameHeight / 2)))));
+//				Debug.Log ("\ntrackbarDiffFloat: " + trackbarDiffFloat + "\n" +
+//					"total diatance: " + totalDistance + "\n" +
+//					"_current.x: " + _current.x + "\n" +
+//					"_current.y: " + _current.y + "\n" +
+//					"frameWidth: " + frameWidth + "\n" +
+//					"frameHeight: " + frameHeight + "\n" +
+//					"(1 - trackbarDiffFloat/totalDistance): " + (1 - trackbarDiffFloat/totalDistance)
+//				);
+			} else {
+				//face detection 
+
+//				Debug.Log ("rects length: " + rects.Length);
+				if (rects != null && rects.Length > 0 ) {
+					totalDistance = (float)Math.Sqrt (((rects [0].width / 2) * (rects [0].width / 2)) + ((rects [0].height / 2) * (rects [0].height / 2))) + exaggerateData * (100);
+
+					_current.x =  exaggerateData * (100) + (_current.x * resizeFactor - rects [0].x);
+					_current.y = exaggerateData *  (100) + (_current.y * resizeFactor - rects [0].y);
+
+					trackbarDiffFloat = (float)(Math.Sqrt ((
+					    (_current.x - (rects [0].width / 2)) * (_current.x - (rects [0].width / 2))) + ((_current.y - (rects [0].height / 2)) * (_current.y - (rects [0].height / 2)))));
+//					Debug.Log ("\ntrackbarDiffFloat: " + trackbarDiffFloat + "\n" +
+//						"total diatance: " + totalDistance + "\n" +
+//						"_current.x: " + _current.x + "\n" +
+//						"_current.y: " + _current.y + "\n" +
+//						"rects [0].width: " + rects [0].width + "\n" +
+//						"rects [0].height: " + rects [0].height + "\n" +
+//						"(1 - trackbarDiffFloat/totalDistance): " + (1 - trackbarDiffFloat/totalDistance)
+//					);
+				} else {
+					return 0.01f;
+				}
+			}
 			if (trackbarDiffFloat > totalDistance - 10)
 				trackbarDiffFloat = totalDistance;
 			if (trackbarDiffFloat < 10)
