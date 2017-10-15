@@ -219,6 +219,8 @@ namespace AeStatix
 		int numberOfFramesWithNoFace = 10;
 		OpenCVForUnity.Range horiRange;
 		OpenCVForUnity.Range vertRange;
+		int[] intMaxDetections = new int[1];
+		MatOfInt maxDetections; 
 
 		/////////////////////////////////
 
@@ -642,6 +644,8 @@ namespace AeStatix
 			//faces
 			faces = new MatOfRect ();
 			faceSubmat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
+			intMaxDetections[0] = 1;
+			maxDetections = new MatOfInt (intMaxDetections); 
 
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
@@ -818,7 +822,7 @@ namespace AeStatix
 //									"r: " + (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ) + "\n" +
 //									"G : " + (int)Math.Round ((precentageToCenter*precentageToCenter) * 235) + "\n" +
 //								"B : 0");
-								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), new Scalar( (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ),(int)Math.Round ((precentageToCenter*precentageToCenter) * 235) ,0,255)  , Imgproc.LINE_AA, 0, new Point (0, 0));
+								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), new Scalar( (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ),(int)Math.Round ((precentageToCenter*precentageToCenter) * 235) ,(int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  )/1.5,255)  , Imgproc.LINE_AA, 0, new Point (0, 0));
 							}
 						}
 						if (cross) {
@@ -1028,9 +1032,10 @@ namespace AeStatix
 							Core.addWeighted (resizeMat, (1 - locationWeight), locationMat, locationWeight, 0.0, resizeMat);
 						}
 
-						//split channels
+						//flip colors position
 						Imgproc.cvtColor (resizeMat, resizeMat, Imgproc.COLOR_RGB2BGR);
 
+						//split channels and 
 						Core.split (resizeMat, channels);
 
 						//clear last cenbters
@@ -1046,29 +1051,23 @@ namespace AeStatix
 					else {
 						Debug.Log ("face detection on");
 
-						//start of copy
+						//Mat for detection
 						Core.flip(resizeMat,resizeMat,1);
-						//TO-DO: test if multiple clone is segnificant performance (switched from edge bias)
-						grayMat = resizeMat.clone ();
-						Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
-
-						//face detection
+						Imgproc.cvtColor (resizeMat, grayMat, Imgproc.COLOR_RGB2GRAY);
 						Imgproc.equalizeHist (grayMat, grayMat);
 
-						if (cascade != null)
-							cascade.detectMultiScale (grayMat, faces, 1.1, 2, 2, 
-								new Size (20, 20), new Size ());
-
+						// actual cascade face detection
+						if (cascade != null) {
+							cascade.detectMultiScale2 (grayMat, faces, maxDetections, 1.1, 2, 2, new Size (20, 20), new Size ());
+							//cascade.detectMultiScale (grayMat, faces, 1.1, 2, 2, new Size (20, 20), new Size ());
+						}
 						rects = faces.toArray ();
-
 
 						if (rects.Length > 0  ) {
 
+//							Debug.Log ("Detected face ROI: " + rects [0]);
 							lastFaceFrame = frameCount;
-							faceRefMat.setTo(new Scalar (255,255,255));
-
-//							Debug.Log ("detect faces " + rects [0]);
-
+					
 							//change mat sizes
 							faceRefMat.create (rects [0].size(), CvType.CV_8UC3);
 							grayFaceMat.create (rects [0].size(), CvType.CV_8UC1);
@@ -1077,10 +1076,8 @@ namespace AeStatix
 
 							//flip values
 							Core.bitwise_not (faceRefMat, faceRefMat);
-							
 
 							// draw faces (in update loop)
-
 
 							//edge detection and wights
 							if (edgeBias) {
@@ -1092,16 +1089,13 @@ namespace AeStatix
 									Imgproc.threshold (grayFaceMat, grayFaceMat, edgeThreshold, 255, Imgproc.THRESH_BINARY);
 								}
 
-								//weights
+								// add aweights
 								Imgproc.cvtColor (grayFaceMat, grayFaceMat, Imgproc.COLOR_GRAY2RGB);
-								//Debug.Log("sample pixel before calc: " + resizeMat.get (100, 100).GetValue(0));
 								Core.addWeighted (faceRefMat, (1 - edgeWeight), grayFaceMat, edgeWeight, edgeGamma, faceRefMat);
-								//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
 							}
 
+							//Location isn't relevant for face detection mode
 //							if (loactionBias) {
-//								//TO-DO: weighted average CHANGE + track bar################################ done
-//								//TO-DO:  individual location (?)
 //								Core.addWeighted (faceRefMat, (1 - locationWeight), locationMat, locationWeight, 0.0, faceRefMat);
 //							}
 
@@ -1118,14 +1112,13 @@ namespace AeStatix
 							//clear last faces
 							displayFacePoints.Clear ();
 							//add face point
-							displayFacePoints.Add ((int)(rects[0].x/resizeFactor));
+							displayFacePoints.Add ( (int)(rects[0].x/resizeFactor));
 							displayFacePoints.Add ( (int)(rects [0].y / resizeFactor));
 							displayFacePoints.Add ( (int)(rects[0].x/resizeFactor + rects[0].width/resizeFactor));
 							displayFacePoints.Add ( (int)(rects [0].y / resizeFactor + rects [0].height / resizeFactor));
 
 
 						}
-						//end of copy
 					}
 					moments.Clear ();
 					centersObj.Clear ();
@@ -1143,13 +1136,11 @@ namespace AeStatix
 
 			//resize point up
 			if (!faceDetection) {
-				point.x = map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData);
-				point.y = map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData);
+				point.x = (int)Math.Round( map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData));
+				point.y =(int)Math.Round( map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData));
 			} else {
-				point.x = (webCamTexture.width - (point.x + rects [0].x) / resizeFactor );
-				point.y = (point.y + rects [0].y) / resizeFactor ;
-//				point.x = map ((float)point.x, (float)faceRefMat.width(),0, (float)rects[0].x / resizeFactor,  (float)(rects[0].width + (float)rects[0].x )/ resizeFactor);
-//				point.y = map ((float)point.y, 0, (float)faceRefMat.height(), (float)rects[0].y / resizeFactor, (float)rects[0].height / resizeFactor );
+				point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor ));
+				point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
 			}
 			centersObj.Add(new Centers(channel, point) );
 
