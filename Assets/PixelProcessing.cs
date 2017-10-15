@@ -53,6 +53,9 @@ namespace AeStatix
 		[SerializeField]
 		[Range(1f,5f)]
 		float exaggerateData = 1;
+		[SerializeField]
+		[Range(0,10)]
+		int exaggerateDataFace = 4;
 		Size resizeSize;
 		[SerializeField]
 		[Range(0.8f,1f)]
@@ -222,6 +225,7 @@ namespace AeStatix
 		int[] intMaxDetections = new int[1];
 		MatOfInt maxDetections; 
 		bool flippedForPhoto = false;
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -808,6 +812,10 @@ namespace AeStatix
 									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
 									faceSubmat -= new Scalar (0, 0, 0, 100);
 									Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
+									//opposite
+//									rgbaMat -= new Scalar (0, 0, 0, 150);
+//									Core.bitwise_or(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
+
 								}
 							}
 							
@@ -870,15 +878,31 @@ namespace AeStatix
 
 		}
 		public void SnapToCenters(){
-			if (frameCount >= 0 && !faceDetection){
+			if (frameCount >= 0  && displayCenters.Count > 0){
 				for (int q = 0; q < displayCenters.Count; q++) {
-					//channel center inside rect
-					if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
-					   && displayCenters [q].point.x <= (rgbaMat.width () / 2) + snapToCenterSize
-					   && displayCenters [q].point.y >= (rgbaMat.height () / 2) - snapToCenterSize
-					   && displayCenters [q].point.y <= (rgbaMat.height () / 2) + snapToCenterSize) {
+					if (!faceDetection) {
+						//channel center inside rect
+						if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
+						    && displayCenters [q].point.x <= (rgbaMat.width () / 2) + snapToCenterSize
+						    && displayCenters [q].point.y >= (rgbaMat.height () / 2) - snapToCenterSize
+						    && displayCenters [q].point.y <= (rgbaMat.height () / 2) + snapToCenterSize) {
 
-						displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
+							displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
+						}
+					} else {
+						//channel center inside rect
+//						Debug.Log ("\n displayCenters [q].point.x: " + displayCenters [q].point.x + "\n" +
+//						"rects[0].width: " + rects [0].width + "\n" +
+//						"rects[0].x: " + rects [0].x);
+//
+//						rects[0].x + rects[0].width
+//						if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
+//							&& displayCenters [q].point.x <= (rgbaMat.width () / 2) + snapToCenterSize
+//							&& displayCenters [q].point.y >= (rgbaMat.height () / 2) - snapToCenterSize
+//							&& displayCenters [q].point.y <= (rgbaMat.height () / 2) + snapToCenterSize) {
+//
+//							displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
+//						}
 					}
 				}
 			}
@@ -1145,9 +1169,29 @@ namespace AeStatix
 				point.x = (int)Math.Round( map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData));
 				point.y =(int)Math.Round( map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData));
 			} else {
-				point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor ));
-				point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
-			}
+				if (currentFacePoints.Count > 0) {
+//				point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor ));
+//				point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
+
+//					point.x = (int)Math.Round (map ((float)point.x, currentFacePoints [2], 0,((float)webCamTexture.width - - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData));
+//					point.x = (int)Math.Round (map ((float)point.x, currentFacePoints [2], (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData));
+
+					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, (float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace), (float)rects[0].width * (exaggerateData + exaggerateDataFace) ));
+					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, (float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace), (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
+
+//					Debug.Log ("BFR resize factor: X: " + point.x + " Y: " + point.y + "\n" +
+//						"rects [0].width: " + rects [0].width + "\n" +
+//						"currentFacePoints[2]: " + currentFacePoints[2]);
+					point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor));
+					point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
+//					Debug.Log ("AFTER resize factor: X: " + point.x + " Y: " + point.y);
+
+
+
+
+
+				}
+				}
 			centersObj.Add(new Centers(channel, point) );
 
 			return centersObj [channel];
