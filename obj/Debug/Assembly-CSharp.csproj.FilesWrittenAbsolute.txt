@@ -20,3 +20,5 @@
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEngine.Analytics.dll
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEngine.HoloLens.dll
 /Users/ron/Desktop/AeStatic-unity/AeStatix/Temp/bin/Debug/UnityEngine.VR.dll
+/Users/ron/Desktop/AeStatic-unity/aestatix/obj/Debug/Assembly-CSharp.dll
+/Users/ron/Desktop/AeStatic-unity/aestatix/obj/Debug/Assembly-CSharp.dll.mdb

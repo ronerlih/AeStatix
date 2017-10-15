@@ -221,7 +221,7 @@ namespace AeStatix
 		OpenCVForUnity.Range vertRange;
 		int[] intMaxDetections = new int[1];
 		MatOfInt maxDetections; 
-
+		bool flippedForPhoto = false;
 		/////////////////////////////////
 
 		/// <summary>
@@ -792,7 +792,7 @@ namespace AeStatix
 
 								checkForFacesData ();
 
-								Debug.Log ("detect faces " + rects [0]);
+//								Debug.Log ("detect faces " + rects [0]);
 								Imgproc.resize (faceSubmat, faceSubmat, rects [0].size ());
 								//draw faces
 								//Core.bitwise_not( rgbaMat,rgbaMat);
@@ -849,13 +849,19 @@ namespace AeStatix
 							}
 						}
 						Utils.matToTexture2D (rgbaMat, texture, colors);
+						flippedForPhoto = false;
 					}
 				} else {
+					if (faceDetection && !flippedForPhoto) {
+						Core.flip (rgbMat, rgbMat, 1);
+						flippedForPhoto = true;
+					}
+
 					// photo border
-					photoWhiteMat.colRange(0,20).copyTo(rgbMat.colRange(0,20));
-					photoWhiteMat.colRange(photoWhiteMat.cols() -20 ,photoWhiteMat.cols()).copyTo(rgbMat.colRange(photoWhiteMat.cols() -20 ,photoWhiteMat.cols()));
-					photoWhiteMat.rowRange(0,20).copyTo(rgbMat.rowRange(0,20));
-					photoWhiteMat.rowRange(photoWhiteMat.rows() -20 ,photoWhiteMat.rows()).copyTo(rgbMat.rowRange(photoWhiteMat.rows() -20 ,photoWhiteMat.rows()));
+					photoWhiteMat.colRange (0, 20).copyTo (rgbMat.colRange (0, 20));
+					photoWhiteMat.colRange (photoWhiteMat.cols () - 20, photoWhiteMat.cols ()).copyTo (rgbMat.colRange (photoWhiteMat.cols () - 20, photoWhiteMat.cols ()));
+					photoWhiteMat.rowRange (0, 20).copyTo (rgbMat.rowRange (0, 20));
+					photoWhiteMat.rowRange (photoWhiteMat.rows () - 20, photoWhiteMat.rows ()).copyTo (rgbMat.rowRange (photoWhiteMat.rows () - 20, photoWhiteMat.rows ()));
 
 					Utils.matToTexture2D (rgbMat, texture, colors);
 				}
