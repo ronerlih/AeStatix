@@ -1029,7 +1029,7 @@ namespace AeStatix
 						}
 
 						//split channels
-						//Imgproc.cvtColor (resizeMat, resizeMat, Imgproc.COLOR_RGB2BGR);
+						Imgproc.cvtColor (resizeMat, resizeMat, Imgproc.COLOR_RGB2BGR);
 
 						Core.split (resizeMat, channels);
 
