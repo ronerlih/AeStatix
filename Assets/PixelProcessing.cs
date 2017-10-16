@@ -152,6 +152,9 @@ namespace AeStatix
 		[SerializeField]
 		[Range(1,300)]
 		int snapToCenterSize = 50;
+		[SerializeField]
+		[Range(1,300)]
+		int snapToCenterSizeFace = 20;
 		OpenCVForUnity.Rect snapToCenterRect;
 
 		//take photo
@@ -225,7 +228,8 @@ namespace AeStatix
 		int[] intMaxDetections = new int[1];
 		MatOfInt maxDetections; 
 		bool flippedForPhoto = false;
-
+		int faceMiddleX = 0;
+		int faceMiddleY = 0;
 		/////////////////////////////////
 
 		/// <summary>
@@ -887,6 +891,8 @@ namespace AeStatix
 		public void SnapToCenters(){
 			if (frameCount >= 0  && displayCenters.Count > 0){
 				for (int q = 0; q < displayCenters.Count; q++) {
+//					Debug.Log ("\n displayCenters [q].point.x: " + displayCenters [q].point.x);
+
 					if (!faceDetection) {
 						//channel center inside rect
 						if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
@@ -896,20 +902,23 @@ namespace AeStatix
 
 							displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
 						}
+					
+						
 					} else {
 						//channel center inside rect
-//						Debug.Log ("\n displayCenters [q].point.x: " + displayCenters [q].point.x + "\n" +
-//						"rects[0].width: " + rects [0].width + "\n" +
-//						"rects[0].x: " + rects [0].x);
-//
-//						rects[0].x + rects[0].width
-//						if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
-//							&& displayCenters [q].point.x <= (rgbaMat.width () / 2) + snapToCenterSize
-//							&& displayCenters [q].point.y >= (rgbaMat.height () / 2) - snapToCenterSize
-//							&& displayCenters [q].point.y <= (rgbaMat.height () / 2) + snapToCenterSize) {
-//
-//							displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
-//						}
+						if(rects != null && rects.Length > 0){
+
+							faceMiddleX = (int)Math.Round( frameWidth - (( rects [0].x + rects [0].width/2)/resizeFactor));
+							faceMiddleY = (int)Math.Round( ( rects [0].y + rects [0].height/2)/resizeFactor);
+
+							if (   (displayCenters [q].point.x)  >= (faceMiddleX) - snapToCenterSizeFace
+								&& (displayCenters [q].point.x)  <= (faceMiddleX) + snapToCenterSizeFace
+								&& ( displayCenters [q].point.y) >= (faceMiddleY) - snapToCenterSizeFace
+								&& ( displayCenters [q].point.y) <= (faceMiddleY) + snapToCenterSizeFace) {
+
+								displayCenters [q].point = new Point (faceMiddleX, faceMiddleY);
+						}
+						}
 					}
 				}
 			}
@@ -1085,7 +1094,10 @@ namespace AeStatix
 						}
 					} 
 
-					//face detection
+					//////////
+					// process face detection
+					//////////
+
 
 					else {
 						Debug.Log ("face detection on");
@@ -1095,7 +1107,7 @@ namespace AeStatix
 						Imgproc.cvtColor (resizeMat, grayMat, Imgproc.COLOR_RGB2GRAY);
 						Imgproc.equalizeHist (grayMat, grayMat);
 
-						// actual cascade face detection
+						// actual cascade face detection // LBS fast dataset 10% less accurate - change to haar cascade dataset at cascade initiation
 						if (cascade != null) {
 							cascade.detectMultiScale2 (grayMat, faces, maxDetections, 1.1, 2, 2, new Size (20, 20), new Size ());
 							//cascade.detectMultiScale (grayMat, faces, 1.1, 2, 2, new Size (20, 20), new Size ());
@@ -1173,37 +1185,24 @@ namespace AeStatix
 			moments.Add(Imgproc.moments(_mat,false));
 			point = new Point ( (int) Math.Round((moments [channel].m10 / moments [channel].m00)), (int)Math.Round( (moments [channel].m01 / moments [channel].m00)));
 
+			//TO-DO: figure out the math
 			//flipping mat first iteration is negative
-			if (point.x.ToString() == "NaN") {
+			Debug.Log("BFR 1st itiration, point.y: " + point.y);
+			if (point.x.ToString() == "NaN" || point.x < 0 || point.y < 0) {
 				point = new Point (webCamTexture.width / 2, webCamTexture.height / 2);
 			}
-			Debug.Log ("moments point: " + point.ToString ());
 			//resize point up
 			if (!faceDetection) {
 				point.x = (int)Math.Round( map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData));
 				point.y =(int)Math.Round( map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData));
 			} else {
 				if (currentFacePoints.Count > 0) {
-//				point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor ));
-//				point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
-
-//					point.x = (int)Math.Round (map ((float)point.x, currentFacePoints [2], 0,((float)webCamTexture.width - - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData));
-//					point.x = (int)Math.Round (map ((float)point.x, currentFacePoints [2], (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData));
 
 					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, (float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace), (float)rects[0].width * (exaggerateData + exaggerateDataFace) ));
 					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, (float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace), (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
 
-//					Debug.Log ("BFR resize factor: X: " + point.x + " Y: " + point.y + "\n" +
-//						"rects [0].width: " + rects [0].width + "\n" +
-//						"currentFacePoints[2]: " + currentFacePoints[2]);
 					point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor));
 					point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
-//					Debug.Log ("AFTER resize factor: X: " + point.x + " Y: " + point.y);
-
-
-
-
-
 				}
 				}
 			centersObj.Add(new Centers(channel, point) );
