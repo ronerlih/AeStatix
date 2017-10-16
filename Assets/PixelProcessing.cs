@@ -907,10 +907,10 @@ namespace AeStatix
 
 					if (!faceDetection) {
 						//channel center inside rect
-						if (displayCenters [q].point.x >= (rgbaMat.width () / 2) - snapToCenterSize
-						    && displayCenters [q].point.x <= (rgbaMat.width () / 2) + snapToCenterSize
-						    && displayCenters [q].point.y >= (rgbaMat.height () / 2) - snapToCenterSize
-						    && displayCenters [q].point.y <= (rgbaMat.height () / 2) + snapToCenterSize) {
+						if (displayCenters [q].point.x >= (frameWidth / 2) - snapToCenterSize
+							&& displayCenters [q].point.x <= (frameWidth / 2) + snapToCenterSize
+							&& displayCenters [q].point.y >= (frameHeight / 2) - snapToCenterSize
+							&& displayCenters [q].point.y <= (frameHeight / 2) + snapToCenterSize) {
 
 							displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
 						}
@@ -956,10 +956,12 @@ namespace AeStatix
 
 			// currentCenters step
 			if (displayCenters.Count > 1) {
+
 				for (int h = 0; h < displayCenters.Count; h++) {
-					currentCenters [h].point.x = speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed);
-					currentCenters [h].point.y = speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed);
+					currentCenters [h].point.x = (int)Math.Round( speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed));
+					currentCenters [h].point.y = (int)Math.Round( speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed));
 				}
+
 				//centers center - weighted average
 				averageCenter.point = WeightedAverageThree (currentCenters [0].point, currentCenters [1].point, currentCenters [2].point);
 			}
