@@ -233,8 +233,7 @@ namespace AeStatix
 		int faceMiddleY = 0;
 		bool trackbarFace = false;
 
-		public GameObject[] cameraGameObject;
-		MeshRenderer gameObjectRenderer;
+		Color faceBackgroundColor = new Color (255, 255, 0);
 		/////////////////////////////////
 
 		/// <summary>
@@ -659,9 +658,6 @@ namespace AeStatix
 			faceSubmat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			intMaxDetections[0] = 1;
 			maxDetections = new MatOfInt (intMaxDetections); 
-			cameraGameObject = GameObject.FindGameObjectsWithTag("MainCamera");
-			gameObjectRenderer = cameraGameObject[0].GetComponent<MeshRenderer>();
-
 
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
@@ -831,17 +827,24 @@ namespace AeStatix
 								vertRange = new OpenCVForUnity.Range (currentFacePoints [1], currentFacePoints [3]);
 
 								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-								faceSubmat -= new Scalar (0, 0, 0, 60 );
-								Camera.main.backgroundColor = new Color ( (1 - precentageToCenter) - 0.2f,  precentageToCenter ,0, precentageToCenter  );
+								faceSubmat -= new Scalar (0, 0, 0, 30 );
+
+								faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
+								faceBackgroundColor.g = precentageToCenter;
+								faceBackgroundColor.a = precentageToCenter ;
+								Camera.main.backgroundColor = faceBackgroundColor;
 									
 								Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
 							
 							} else {
 								if (frameCount >= 15 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
 									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-									faceSubmat -= new Scalar (0, 0, 0, 100);
+									faceSubmat -= new Scalar (0, 0, 0, 30);
 
-//									Camera.main.backgroundColor = new Color (50 * (1 - precentageToCenter) - 250, 255 * precentageToCenter + 50, 0);
+									faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
+									faceBackgroundColor.g = precentageToCenter;
+									faceBackgroundColor.a = precentageToCenter ;
+									Camera.main.backgroundColor = faceBackgroundColor;
 
 									Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
 									//opposite
