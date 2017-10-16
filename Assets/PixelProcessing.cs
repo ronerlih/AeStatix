@@ -633,17 +633,24 @@ namespace AeStatix
 				.rowRange((int)Math.Round (locationMat.height() * rationOfScreen), (int)Math.Round (locationMat.height() * (1 - rationOfScreen))));
 
 			//average center
-			averageCenter = new Centers (4,new Point(rgbMat.width()/2,rgbMat.height()/2));
+			averageCenter = new Centers (4,new Point(webCamTexture.width/2,webCamTexture.height/2));
 				
 			//centers init
+			Debug.Log(" BFR display center init length: " + displayCenters.Count);
+			Debug.Log(" BFR current center init length: " + currentCenters.Count);
+
 			displayCenters.Clear();
 			for(int c = 0; c<3 ; c++){
-				currentCenters.Add (new Centers(c, new Point(rgbMat.width()/2,rgbMat.height()/2)));
+				currentCenters.Add (new Centers(c, new Point(webCamTexture.width/2,webCamTexture.height/2)));
 			}
 			displayCenters.Clear ();
 			for(int c = 0; c<3 ; c++){
-				displayCenters.Add (new Centers(c, new Point(rgbMat.width()/2,rgbMat.height()/2)));
+				displayCenters.Add (new Centers(c, new Point(webCamTexture.width/2,webCamTexture.height/2)));
 			}
+			Debug.Log(" AFTER display center init length: " + displayCenters.Count);
+			Debug.Log(" AFTER current center init length: " + currentCenters.Count);
+			Debug.Log(" AFTER current center init length: " + currentCenters[0].ToString());
+
 
 			//faces
 			faces = new MatOfRect ();
@@ -918,22 +925,24 @@ namespace AeStatix
 
 			if (displayCenters!= null && currentCenters.Count == 0 || !centersFlag) {
 				currentCenters.Clear ();
+
 				//initiate currentCenters
 				for (int d = 0; d < displayCenters.Count; d++) {
 						currentCenters.Add (new Centers (d, new Point (rgbaMat.width () * 0.5, rgbaMat.height () * 0.5)));
 					}
+			
 			}
-				
+
 			// currentCenters step
 			if (displayCenters.Count > 1) {
 				for (int h = 0; h < displayCenters.Count; h++) {
 					currentCenters [h].point.x = speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed);
 					currentCenters [h].point.y = speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed);
 				}
-
 				//centers center - weighted average
 				averageCenter.point = WeightedAverageThree (currentCenters [0].point, currentCenters [1].point, currentCenters [2].point);
 			}
+
 			centersFlag = true;
 
 		}
@@ -1038,11 +1047,13 @@ namespace AeStatix
 
 						//flip values
 						Core.bitwise_not (resizeMat, resizeMat);
+						//flip colors position
+						Imgproc.cvtColor (resizeMat, resizeMat, Imgproc.COLOR_RGB2BGR);
 
 						//edge detection and wights
 						if (edgeBias) {
 							grayMat = resizeMat.clone();
-							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_BGR2GRAY);
 
 							Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
 							Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
@@ -1062,8 +1073,6 @@ namespace AeStatix
 							Core.addWeighted (resizeMat, (1 - locationWeight), locationMat, locationWeight, 0.0, resizeMat);
 						}
 
-						//flip colors position
-						Imgproc.cvtColor (resizeMat, resizeMat, Imgproc.COLOR_RGB2BGR);
 
 						//split channels and 
 						Core.split (resizeMat, channels);
@@ -1162,8 +1171,13 @@ namespace AeStatix
 		
 			// 3rd order moment center of mass
 			moments.Add(Imgproc.moments(_mat,false));
-			point = new Point ((moments [channel].m10 / moments [channel].m00), (moments [channel].m01 / moments [channel].m00));
+			point = new Point ( (int) Math.Round((moments [channel].m10 / moments [channel].m00)), (int)Math.Round( (moments [channel].m01 / moments [channel].m00)));
 
+			//flipping mat first iteration is negative
+			if (point.x.ToString() == "NaN") {
+				point = new Point (webCamTexture.width / 2, webCamTexture.height / 2);
+			}
+			Debug.Log ("moments point: " + point.ToString ());
 			//resize point up
 			if (!faceDetection) {
 				point.x = (int)Math.Round( map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData));
