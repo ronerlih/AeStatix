@@ -183,6 +183,7 @@ namespace AeStatix
 		MatOfPoint barPoints = new MatOfPoint ();
 		Point[] barPointsArray = new Point[3];
 		Point centerPoint;
+		Point pointForTrackBarDiff = new Point();
 		float totalDistance;
 		float trackbarDiffFloat;
 		float frameWidth;
@@ -230,6 +231,10 @@ namespace AeStatix
 		bool flippedForPhoto = false;
 		int faceMiddleX = 0;
 		int faceMiddleY = 0;
+		bool trackbarFace = false;
+
+		public GameObject[] cameraGameObject;
+		MeshRenderer gameObjectRenderer;
 		/////////////////////////////////
 
 		/// <summary>
@@ -598,9 +603,10 @@ namespace AeStatix
 			}
 		}
 
-		/// <summary>
-		/// Initialize completion handler of the webcam texture.
-		/// </summary>
+		////////////
+		/// MAIN INITIATION (after getting the WebcamTexture)
+		///////////
+
 		private void OnInited ()
 		{	
 			//texture initiation
@@ -639,10 +645,6 @@ namespace AeStatix
 			//average center
 			averageCenter = new Centers (4,new Point(webCamTexture.width/2,webCamTexture.height/2));
 				
-			//centers init
-			Debug.Log(" BFR display center init length: " + displayCenters.Count);
-			Debug.Log(" BFR current center init length: " + currentCenters.Count);
-
 			displayCenters.Clear();
 			for(int c = 0; c<3 ; c++){
 				currentCenters.Add (new Centers(c, new Point(webCamTexture.width/2,webCamTexture.height/2)));
@@ -651,16 +653,15 @@ namespace AeStatix
 			for(int c = 0; c<3 ; c++){
 				displayCenters.Add (new Centers(c, new Point(webCamTexture.width/2,webCamTexture.height/2)));
 			}
-			Debug.Log(" AFTER display center init length: " + displayCenters.Count);
-			Debug.Log(" AFTER current center init length: " + currentCenters.Count);
-			Debug.Log(" AFTER current center init length: " + currentCenters[0].ToString());
-
 
 			//faces
 			faces = new MatOfRect ();
 			faceSubmat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			intMaxDetections[0] = 1;
 			maxDetections = new MatOfInt (intMaxDetections); 
+			cameraGameObject = GameObject.FindGameObjectsWithTag("MainCamera");
+			gameObjectRenderer = cameraGameObject[0].GetComponent<MeshRenderer>();
+
 
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
@@ -673,7 +674,7 @@ namespace AeStatix
 
 			//trackBar UI
 	//		Point centerPoint = new Point(rgbMat.width()/2,rgbMat.height()/2);
-			totalDistance =(float) Math.Sqrt(( (rgbMat.width()/2 ) * ( rgbMat.width()/2) ) + ( (rgbMat.height()/2) * (rgbMat.height()/2) )); 
+			totalDistance =(float) Math.Sqrt(( (rgbaMat.width()/2 ) * ( rgbaMat.width()/2) ) + ( (rgbaMat.height()/2) * (rgbaMat.height()/2) )); 
 			//Debug.Log("max distance from center (trackbar feedback): " + totalDistance + "px\n");
 			Point[] trackPointArray = new Point[3] {
 				new Point (rgbMat.width(), rgbMat.height()),
@@ -719,6 +720,7 @@ namespace AeStatix
 				} else {
 					Camera.main.orthographicSize = height / 2;
 				}
+
 			}//camera rotation
 			//
 
@@ -726,7 +728,10 @@ namespace AeStatix
 			StartCoroutine(processFrame());
 		}
 
-		// called once per frame
+		////////////
+		/// DRAWING - update loop - called once per frame
+		///////////
+
 		void Update ()
 		{	
 			//got a camera frame
@@ -796,7 +801,18 @@ namespace AeStatix
 							}
 						}
 
-
+						//trackBar
+						if (showTrackBar) {
+							if (currentCenters [0] != null) {
+								precentageToCenter = TrackbarDiff (averageCenter.point);
+								//trackbar colors debug
+								//								Debug.Log ("percent from center: " +precentageToCenter+
+								//									"r: " + (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ) + "\n" +
+								//									"G : " + (int)Math.Round ((precentageToCenter*precentageToCenter) * 235) + "\n" +
+								//								"B : 0");
+								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), new Scalar( (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ),(int)Math.Round ((precentageToCenter*precentageToCenter) * 235) ,(int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  )/1.5,255)  , Imgproc.LINE_AA, 0, new Point (0, 0));
+							}
+						}
 
 						if (faceDetection) {
 
@@ -815,13 +831,18 @@ namespace AeStatix
 								vertRange = new OpenCVForUnity.Range (currentFacePoints [1], currentFacePoints [3]);
 
 								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-								faceSubmat -= new Scalar (0, 0, 0, 100);
+								faceSubmat -= new Scalar (0, 0, 0, 60 );
+								Camera.main.backgroundColor = new Color ( (1 - precentageToCenter) - 0.2f,  precentageToCenter ,0, precentageToCenter  );
+									
 								Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
 							
 							} else {
 								if (frameCount >= 15 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
 									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
 									faceSubmat -= new Scalar (0, 0, 0, 100);
+
+//									Camera.main.backgroundColor = new Color (50 * (1 - precentageToCenter) - 250, 255 * precentageToCenter + 50, 0);
+
 									Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
 									//opposite
 //									rgbaMat -= new Scalar (0, 0, 0, 150);
@@ -832,18 +853,6 @@ namespace AeStatix
 							
 						}
 
-						//trackBar
-						if (showTrackBar) {
-							if (currentCenters [0] != null) {
-								precentageToCenter = TrackbarDiff (averageCenter.point);
-								//trackbar colors debug
-//								Debug.Log ("percent from center: " +precentageToCenter+
-//									"r: " + (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ) + "\n" +
-//									"G : " + (int)Math.Round ((precentageToCenter*precentageToCenter) * 235) + "\n" +
-//								"B : 0");
-								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), new Scalar( (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ),(int)Math.Round ((precentageToCenter*precentageToCenter) * 235) ,(int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  )/1.5,255)  , Imgproc.LINE_AA, 0, new Point (0, 0));
-							}
-						}
 						if (cross) {
 							//TO-DO: new point 
 							Imgproc.circle (rgbaMat,new Point( frameWidth/2,frameHeight/2) , 30, crossColor, 0,Imgproc.LINE_AA,0);
@@ -1187,7 +1196,7 @@ namespace AeStatix
 
 			//TO-DO: figure out the math
 			//flipping mat first iteration is negative
-			Debug.Log("BFR 1st itiration, point.y: " + point.y);
+//			Debug.Log("BFR 1st itiration, point.y: " + point.y);
 			if (point.x.ToString() == "NaN" || point.x < 0 || point.y < 0) {
 				point = new Point (webCamTexture.width / 2, webCamTexture.height / 2);
 			}
@@ -1381,48 +1390,42 @@ namespace AeStatix
 		}
 		public float TrackbarDiff(Point _current){
 
+			//TO-DO: optimize initiation with flag condition 
 			if (!faceDetection) {
-				totalDistance = (float)Math.Sqrt (((rgbMat.width () / 2) * (rgbMat.width () / 2)) + ((rgbMat.height () / 2) * (rgbMat.height () / 2)));
-
+					totalDistance = (float)Math.Sqrt (((frameWidth / 2) * (frameWidth / 2)) + ((frameHeight / 2) * (frameHeight / 2)));
+		
 				trackbarDiffFloat = (float)(Math.Sqrt ((
 				    (_current.x - (frameWidth / 2)) * (_current.x - (frameWidth / 2))) + ((_current.y - (frameHeight / 2)) * (_current.y - (frameHeight / 2)))));
-//				Debug.Log ("\ntrackbarDiffFloat: " + trackbarDiffFloat + "\n" +
-//					"total diatance: " + totalDistance + "\n" +
-//					"_current.x: " + _current.x + "\n" +
-//					"_current.y: " + _current.y + "\n" +
-//					"frameWidth: " + frameWidth + "\n" +
-//					"frameHeight: " + frameHeight + "\n" +
-//					"(1 - trackbarDiffFloat/totalDistance): " + (1 - trackbarDiffFloat/totalDistance)
-//				);
+
+				if (trackbarDiffFloat > totalDistance - 10)
+					trackbarDiffFloat = totalDistance;
+				if (trackbarDiffFloat < 10)
+					trackbarDiffFloat = 0;
 			} else {
 				//face detection 
 
-//				Debug.Log ("rects length: " + rects.Length);
 				if (rects != null && rects.Length > 0 ) {
-					totalDistance = (float)Math.Sqrt (((rects [0].width / 2) * (rects [0].width / 2)) + ((rects [0].height / 2) * (rects [0].height / 2))) + exaggerateData * (100);
+					
 
-					_current.x =  exaggerateData * (100) + (_current.x * resizeFactor - rects [0].x);
-					_current.y = exaggerateData *  (100) + (_current.y * resizeFactor - rects [0].y);
+					totalDistance = (float)Math.Sqrt (((rects[0].width / 2)*(rects[0].width / 2) +  (rects[0].height / 2)*(rects[0].height / 2)));
+					_current.x = ((frameWidth -  _current.x) * resizeFactor - rects [0].x);
+					_current.y = (  _current.y * resizeFactor - rects [0].y);
+//					Debug.Log ("_current: " + _current);
+//					Imgproc.circle (rgbaMat, _current, 8, green, 13, Imgproc.LINE_AA, 0);
+
 
 					trackbarDiffFloat = (float)(Math.Sqrt ((
-					    (_current.x - (rects [0].width / 2)) * (_current.x - (rects [0].width / 2))) + ((_current.y - (rects [0].height / 2)) * (_current.y - (rects [0].height / 2)))));
-//					Debug.Log ("\ntrackbarDiffFloat: " + trackbarDiffFloat + "\n" +
-//						"total diatance: " + totalDistance + "\n" +
-//						"_current.x: " + _current.x + "\n" +
-//						"_current.y: " + _current.y + "\n" +
-//						"rects [0].width: " + rects [0].width + "\n" +
-//						"rects [0].height: " + rects [0].height + "\n" +
-//						"(1 - trackbarDiffFloat/totalDistance): " + (1 - trackbarDiffFloat/totalDistance)
-//					);
+						( _current.x - (rects[0].width / 2)) * (_current.x - (rects[0].width / 2))) + ((_current.y - (rects[0].height / 2)) * (_current.y - (rects[0].height / 2)))));
+
+//					Debug.Log ("total disstance: " + totalDistance);
+//					Debug.Log ("trackbarDiffFloat: " + trackbarDiffFloat);
+
 				} else {
 					return 0.01f;
 				}
 			}
-			if (trackbarDiffFloat > totalDistance - 10)
-				trackbarDiffFloat = totalDistance;
-			if (trackbarDiffFloat < 10)
-				trackbarDiffFloat = 0;
 
+//			Debug.Log ("return: " + (1 - trackbarDiffFloat / totalDistance));
 			return (1 - trackbarDiffFloat/totalDistance);
 		}
 				public Point WeightedAverageThree(Point _redPoint, Point _greenPoint, Point _bluePoint){
