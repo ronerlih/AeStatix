@@ -15,16 +15,7 @@ using OpenCVForUnity;
 
 namespace AeStatix
 {	
-	// costume center object
-	public class Centers{
-		public int name{ get; set;}
-		public Point point { get; set;}
-		public Centers(int Name, Point Point){
-			name = Name; //TO-DO: match int var to names of channels
-			point = Point;
-		}
-
-	}
+	
 
 
 //	// Unity to xcode and back
@@ -36,7 +27,16 @@ namespace AeStatix
 	/// </summary>
 	public class PixelProcessing : MonoBehaviour
 	{
-		
+		// costume center object
+		public class Centers{
+			public int name{ get; set;}
+			public Point point { get; set;}
+			public Centers(int Name, Point Point){
+				name = Name; //TO-DO: match int var to names of channels
+				point = Point;
+			}
+		}
+
 		//frame processing
 		//show mats
 		[Header("Analysis")]
@@ -177,14 +177,14 @@ namespace AeStatix
 		int nContours = 3;
 		Point zeroPoint = new Point (0, 0);
 
-		List<MatOfPoint> triangleTrack = new List<MatOfPoint>();
-		List<MatOfPoint> triangleBar = new List<MatOfPoint>();
+		List<MatOfPoint> triangleTrack;
+		List<MatOfPoint> triangleBar;
 
-		MatOfPoint trackPoints = new MatOfPoint ();
-		MatOfPoint barPoints = new MatOfPoint ();
-		Point[] barPointsArray = new Point[3];
+		MatOfPoint trackPoints;
+		MatOfPoint barPoints;
+		Point[] barPointsArray;
 		Point centerPoint;
-		Point pointForTrackBarDiff = new Point();
+		Point pointForTrackBarDiff;
 		float totalDistance;
 		float trackbarDiffFloat;
 		float frameWidth;
@@ -226,8 +226,8 @@ namespace AeStatix
 		[SerializeField]
 		[Range(1,20)]
 		int numberOfFramesWithNoFace = 10;
-		OpenCVForUnity.Range horiRange = new Range (0, 0);
-		OpenCVForUnity.Range vertRange = new Range (0, 0);
+		OpenCVForUnity.Range horiRange;
+		OpenCVForUnity.Range vertRange;
 		int[] intMaxDetections = new int[1];
 		MatOfInt maxDetections; 
 		bool flippedForPhoto = false;
@@ -340,10 +340,10 @@ namespace AeStatix
 		//cascade rotate mat
 		Mat rotateMat;
 		//channels List
-		List<Mat> channels = new List<Mat>();
+		List<Mat> channels;
 
 		//center Points list
-		List<Point> centerPoints = new List<Point>();
+		List<Point> centerPoints;
 
 		/// <summary>
 		/// The colors.
@@ -543,6 +543,14 @@ namespace AeStatix
 			isInitWaiting = false;
 			hasInitDone = false;
 
+//			centersObj.Clear ();
+//			displayCenters.Clear ();
+//			currentCenters.Clear ();
+//			moments.Clear ();
+//			averageCenter = null;
+//
+//			Destroy (gameObject);
+
 			//ui reset
 			loactionBias = false;
 			edgeBias = false;
@@ -665,6 +673,8 @@ namespace AeStatix
 			faceRefMat = new Mat (resizeSize, CvType.CV_8UC3);
 			photoMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 
+			channels = new List<Mat>();
+
 			//assemble location Mat
 			OpenCVForUnity.Rect sub = new OpenCVForUnity.Rect (new Point((int)Math.Round( locationMat.width() * rationOfScreen),(int)Math.Round( locationMat.height() * rationOfScreen)),
 				new Point((int)Math.Round( locationMat.width() * (1- rationOfScreen)),(int)Math.Round( locationMat.height() * (1 - rationOfScreen))));
@@ -674,7 +684,7 @@ namespace AeStatix
 
 			//average center
 			averageCenter = new Centers (4,new Point(webCamTexture.width/2,webCamTexture.height/2));
-			middleOfTheFramePoint = new Point (frameWidth/2, frameHeight/2);
+			middleOfTheFramePoint = new Point (webCamTexture.width/2, webCamTexture.height/2);
 				
 			displayCenters.Clear();
 			for(int c = 0; c<3 ; c++){
@@ -715,11 +725,16 @@ namespace AeStatix
 			Point bottomLeft = new Point (rgbMat.width(), rgbMat.height());
 			Point topRight = bottomLeft;
 			Point bottomRight = bottomLeft;
+			//barPointsArray = new Point[3];
 			barPointsArray = new Point[] {bottomLeft,topRight,bottomRight};
 
+			trackPoints = new MatOfPoint ();
+			barPoints = new MatOfPoint ();
 			barPoints = new MatOfPoint (barPointsArray);
 			trackPoints = new MatOfPoint(trackPointArray);
 
+			triangleTrack = new List<MatOfPoint>();
+			triangleBar = new List<MatOfPoint>();
 			triangleTrack.Add (trackPoints);
 			triangleBar.Add (barPoints);
 
@@ -736,11 +751,11 @@ namespace AeStatix
 				if (widthScale < heightScale) {
 					Camera.main.transform.rotation = new Quaternion (0, 0, 1, 1);
 					Camera.main.orthographicSize = (height * (float)Screen.height / (float)Screen.width) / 2;
-					Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
+					Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x -2, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
 				} else {
 
 					Camera.main.orthographicSize = width / 2;
-					Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
+					Camera.main.transform.position = new Vector3 (Camera.main.transform.position.x -2, Camera.main.transform.position.y, Camera.main.transform.position.z + 10);
 				}
 			}
 			if (webglBuild) {
@@ -914,10 +929,10 @@ namespace AeStatix
 						if (guide) {
 							for (int dotted = 10; dotted <= (frameHeight * 2) ; dotted += 10) {
 								if (dotted % 40 == 10) {
-									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 3), dotted), new Point ((int)(frameWidth / 3), (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 3), dotted),     new Point ((int)(frameWidth / 3), (10 + dotted)),     crossColor, 0, Imgproc.LINE_AA, 0);
 									Imgproc.line (rgbaMat, new Point ((int)(frameWidth * 2 / 3), dotted), new Point ((int)(frameWidth * 2 / 3), (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight/3), new Point ((10 + dotted),  (int)frameHeight/3), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight* 0.666), new Point ((10 + dotted),  (int)frameHeight* 0.666), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight/3),        new Point ((10 + dotted),  (int)frameHeight/3),       crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight*2/3),   new Point ((10 + dotted),  (int)(int)frameHeight*2/3),  crossColor, 0, Imgproc.LINE_AA, 0);
 								}
 							
 							}
@@ -930,19 +945,25 @@ namespace AeStatix
 //							Imgproc.blur (heatmapMat, heatmapMat, new Size(blurSize, blurSize) );
 //							Imgproc.resize(heatmapMat,rgbaMat, rgbaMat.size());
 
+							//color
+//							Imgproc.resize(resizeMat,heatmapMat, heatmapMat.size());
+//
+////							
+//							Core.bitwise_and (heatmapMat, rgbMat, heatmapMat);
+
+							//
 							Imgproc.resize(resizeMat,heatmapMat, heatmapMat.size());
+							Imgproc.cvtColor (rgbaMat, rgbaMat, Imgproc.COLOR_RGBA2RGB);
+							Imgproc.cvtColor (heatmapMat, heatmapMat, Imgproc.COLOR_RGB2HLS);
+							Core.bitwise_not (heatmapMat, heatmapMat);
+
+							Core.bitwise_and (heatmapMat, rgbaMat, heatmapMat);
+							Imgproc.cvtColor (rgbaMat, rgbaMat, Imgproc.COLOR_RGB2RGBA);
+
 //							if (faceDetection) {
 //								Core.flip (heatmapMat, heatmapMat, 1);
-//									}
-							Core.bitwise_and (heatmapMat, rgbMat, heatmapMat);
-//							Imgproc.cvtColor (rgbMat, rgbMat, Imgproc.COLOR_RGB2HSV);
+//								}
 
-
-//							Imgproc.cvtColor (rgbaMat, rgbaMat, Imgproc.COLOR_RGBA2RGB);
-//							Imgproc.cvtColor (rgbMat, rgbaMat, Imgproc.COLOR_RGB2YUV);
-
-
-//							rgbaMat -= new Scalar (50, 0, 0, 0);
 							Utils.matToTexture2D (heatmapMat, texture, colors);
 
 								}else{
@@ -1082,9 +1103,7 @@ namespace AeStatix
 
 				//resize down
 				if (resizeMat != null) {
-					resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
 
-					frameProcessingInit = true;
 
 					////////////
 					/// file Uplaod
@@ -1128,6 +1147,8 @@ namespace AeStatix
 							fileUploadFlag = false;
 							}
 						Imgproc.resize (rgbMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
+//						Imgproc.resize (rgbMat, resizeMat, resizeSize);
+
 					}
 
 					////////////
@@ -1137,7 +1158,10 @@ namespace AeStatix
 					if (!faceDetection) {
 
 						//flip values
-						Core.bitwise_not (resizeMat, resizeMat);
+						if (frameProcessingInit == true) {
+							Core.bitwise_not (resizeMat, resizeMat);
+						}
+
 						//flip colors position
 						Imgproc.cvtColor (resizeMat, resizeMat, Imgproc.COLOR_RGB2BGR);
 
@@ -1233,7 +1257,7 @@ namespace AeStatix
 								rects [0].width = rects [0].height;
 								rects [0].height = rectsWidth;
 
-								Debug.Log ("AFTER rect[0]: " + rects [0].ToString ());
+//								Debug.Log ("AFTER rect[0]: " + rects [0].ToString ());
 									
 
 							}
@@ -1246,7 +1270,7 @@ namespace AeStatix
 //							resizeMat.submat( rects [0]).copyTo (faceRefMat);
 
 							//flip values
-							Core.bitwise_not (faceRefMat, faceRefMat);
+//							Core.bitwise_not (faceRefMat, faceRefMat);
 
 							//edge detection and wights
 							if (edgeBias) {
@@ -1289,6 +1313,7 @@ namespace AeStatix
 					}
 					moments.Clear ();
 					centersObj.Clear ();
+					frameProcessingInit = true;
 				}
 				yield return new WaitForSeconds(secondsBtwProcessing);
 			}
@@ -1304,8 +1329,11 @@ namespace AeStatix
 			//TO-DO: figure out the math
 			//flipping mat first iteration is negative
 //			Debug.Log("BFR 1st itiration, point.y: " + point.y);
+			Debug.Log ("point: " + point);
+
 			if (point.x.ToString() == "NaN" || point.x < 0 || point.y < 0) {
-				point = new Point (webCamTexture.width / 2, webCamTexture.height / 2);
+				point = middleOfTheFramePoint;
+				Debug.Log ("INSIDE CATCH point: " + point);
 			}
 			//resize point up
 			if (!faceDetection) {
@@ -1314,9 +1342,9 @@ namespace AeStatix
 			} else {
 				if (currentFacePoints.Count > 0) {
 
-					Debug.Log ("point: " + point);
+					Debug.Log ("F.Detection point: " + point);
 					//map results to frame with exaggeration
-					point.x = (int)Math.Round( map ((float)point.x,  (float)rects[0].width,0, (float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace), (float)rects[0].width * (exaggerateData + exaggerateDataFace) ));
+					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, (float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace), (float)rects[0].width * (exaggerateData + exaggerateDataFace) ));
 					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, (float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace), (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
 
 					Debug.Log ("AFTER MAP point: " + point);

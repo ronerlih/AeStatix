@@ -1,7 +1,8 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj">
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets/PixelProcessing.cs">
     <Files>
+      <File FileName="Assets/PixelProcessing.cs" Line="1" Column="1" />
       <File FileName="Assets/FPSDisplay.cs" Line="1" Column="1" />
       <File FileName="Assets/ImageManager.cs" Line="1" Column="1" />
       <File FileName="Assets/Singelton.cs" Line="1" Column="1" />
@@ -9,11 +10,12 @@
       <File FileName="Assets/UnityToXcodePhotoEvent.cs" Line="1" Column="1" />
       <File FileName="Assets/OpenCVForUnity/org/opencv/core/MatOfPoint.cs" Line="1" Column="1" />
       <File FileName="Assets/OpenCVForUnity/org/opencv/core/Mat.cs" Line="1" Column="1" />
-      <File FileName="Assets/PixelProcessing.cs" Line="880" Column="28" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
+    <BreakpointStore>
+      <Breakpoint file="/Users/ron/Desktop/AeStatic-unity/AeStatix/Assets/PixelProcessing.cs" line="757" column="1" />
+    </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>

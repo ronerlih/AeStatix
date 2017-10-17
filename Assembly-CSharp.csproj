@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\CenterOfMassTests.cs" />
+     <Compile Include="Assets\Centers.cs" />
      <Compile Include="Assets\FPSDisplay.cs" />
      <Compile Include="Assets\FrameProcessing.cs" />
      <Compile Include="Assets\ImageManager.cs" />
