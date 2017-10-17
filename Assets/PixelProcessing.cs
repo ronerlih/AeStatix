@@ -175,6 +175,7 @@ namespace AeStatix
 		//background blue: // Scalar barColor = new Scalar(82,137,206,255);
 		Scalar barColor = new Scalar(255,255,255,255);
 		int nContours = 3;
+		Point zeroPoint = new Point (0, 0);
 
 		List<MatOfPoint> triangleTrack = new List<MatOfPoint>();
 		List<MatOfPoint> triangleBar = new List<MatOfPoint>();
@@ -186,8 +187,9 @@ namespace AeStatix
 		Point pointForTrackBarDiff = new Point();
 		float totalDistance;
 		float trackbarDiffFloat;
-		float frameWidth;
-		float frameHeight;
+		int frameWidth;
+		int frameHeight;
+		Point middleOfTheFramePoint;
 
 
 		//logic frame count
@@ -224,8 +226,8 @@ namespace AeStatix
 		[SerializeField]
 		[Range(1,20)]
 		int numberOfFramesWithNoFace = 10;
-		OpenCVForUnity.Range horiRange;
-		OpenCVForUnity.Range vertRange;
+		OpenCVForUnity.Range horiRange = new Range (0, 0);
+		OpenCVForUnity.Range vertRange = new Range (0, 0);
 		int[] intMaxDetections = new int[1];
 		MatOfInt maxDetections; 
 		bool flippedForPhoto = false;
@@ -234,6 +236,16 @@ namespace AeStatix
 		bool trackbarFace = false;
 
 		Color faceBackgroundColor = new Color (255, 255, 0);
+		Scalar faceSubmatColor = new Scalar (0, 0, 0, 30);
+		Size maxFaceSize;
+		[Space(10)]
+
+		//heatmap
+		[SerializeField]
+		bool heatmap = true;
+//		[SerializeField]
+//		[Range(1,100)]
+
 		/////////////////////////////////
 
 		/// <summary>
@@ -289,7 +301,10 @@ namespace AeStatix
 		Mat faceRefMat;
 
 		//resize mat
-		Mat resizeMat;
+		Mat resizeMat;	
+
+		//resize mat
+		Mat heatmapMat;
 
 		//resize mat
 		Mat locationMat;
@@ -576,6 +591,10 @@ namespace AeStatix
 				resizeMat.Dispose ();
 				resizeMat = null;
 			}
+			if (heatmapMat != null) {
+				heatmapMat.Dispose ();
+				heatmapMat = null;
+			}
 			if (submat != null) {
 				submat.Dispose ();
 				submat = null;
@@ -620,7 +639,9 @@ namespace AeStatix
 			frameWidth = rgbMat.width ();
 			frameHeight = rgbMat.height ();
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
+			Size pyramidSize = new Size ((int)Math.Round( resizeSize.width/100), (int)Math.Round(resizeSize.height/100));
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
+			heatmapMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
 			Debug.Log ("<unity> analysis size: " + resizeSize.width + "px, " + resizeSize.height + "px");
 			locationMat = new Mat( resizeSize, CvType.CV_8UC3, new Scalar(0,0,0));
 			whiteMat = new Mat(resizeSize, CvType.CV_8UC1, new Scalar(255));
@@ -643,6 +664,7 @@ namespace AeStatix
 
 			//average center
 			averageCenter = new Centers (4,new Point(webCamTexture.width/2,webCamTexture.height/2));
+			middleOfTheFramePoint = new Point (frameWidth/2, frameHeight/2);
 				
 			displayCenters.Clear();
 			for(int c = 0; c<3 ; c++){
@@ -658,6 +680,7 @@ namespace AeStatix
 			faceSubmat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC4);
 			intMaxDetections[0] = 1;
 			maxDetections = new MatOfInt (intMaxDetections); 
+			maxFaceSize = new Size (frameWidth, frameHeight);
 
 			//textures
 			if ( GUItexture == null || GUItexture.width != resizeSize.width || GUItexture.height != resizeSize.height)
@@ -670,12 +693,12 @@ namespace AeStatix
 
 			//trackBar UI
 	//		Point centerPoint = new Point(rgbMat.width()/2,rgbMat.height()/2);
-			totalDistance =(float) Math.Sqrt(( (rgbaMat.width()/2 ) * ( rgbaMat.width()/2) ) + ( (rgbaMat.height()/2) * (rgbaMat.height()/2) )); 
+			totalDistance = (float) Math.Sqrt(( (rgbaMat.width()/2 ) * ( rgbaMat.width()/2) ) + ( (rgbaMat.height()/2) * (rgbaMat.height()/2) )); 
 			//Debug.Log("max distance from center (trackbar feedback): " + totalDistance + "px\n");
 			Point[] trackPointArray = new Point[3] {
-				new Point (rgbMat.width(), rgbMat.height()),
-				new Point (rgbMat.width() - triHight, 0),
-				new Point (rgbMat.width(), 0)
+				new Point (frameWidth, frameHeight),
+				new Point (frameWidth - triHight, 0),
+				new Point (frameWidth, 0)
 			};
 	
 			//bar points
@@ -801,12 +824,12 @@ namespace AeStatix
 						if (showTrackBar) {
 							if (currentCenters [0] != null) {
 								precentageToCenter = TrackbarDiff (averageCenter.point);
-								//trackbar colors debug
-								//								Debug.Log ("percent from center: " +precentageToCenter+
-								//									"r: " + (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ) + "\n" +
-								//									"G : " + (int)Math.Round ((precentageToCenter*precentageToCenter) * 235) + "\n" +
-								//								"B : 0");
-								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), new Scalar( (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ),(int)Math.Round ((precentageToCenter*precentageToCenter) * 235) ,(int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  )/1.5,255)  , Imgproc.LINE_AA, 0, new Point (0, 0));
+								Imgproc.fillPoly (rgbaMat, TriangleBar (precentageToCenter), 
+									new Scalar( (int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  ),
+												(int)Math.Round ((precentageToCenter*precentageToCenter) * 235) ,
+												(int)Math.Round ( ((1 - precentageToCenter*precentageToCenter ) * 300)  )/1.5,
+												255),
+									Imgproc.LINE_AA, 0, zeroPoint);
 							}
 						}
 
@@ -814,39 +837,36 @@ namespace AeStatix
 
 							Core.flip (rgbaMat, rgbaMat, 1);
 
-							if (rects != null && rects.Length > 0) {
+							if (rects != null && rects.Length > 0 ) {
 
 
 								checkForFacesData ();
 
 //								Debug.Log ("detect faces " + rects [0]);
-								Imgproc.resize (faceSubmat, faceSubmat, rects [0].size ());
-								//draw faces
-								//Core.bitwise_not( rgbaMat,rgbaMat);
-								horiRange = new OpenCVForUnity.Range (currentFacePoints [0], currentFacePoints [2]);
-								vertRange = new OpenCVForUnity.Range (currentFacePoints [1], currentFacePoints [3]);
+								faceSubmat.create (rects [0].size (), CvType.CV_8UC4);
 
-								faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-								faceSubmat -= new Scalar (0, 0, 0, 30 );
+								//draw faces
+								faceSubmat = rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]);
+								faceSubmat -= faceSubmatColor;
 
 								faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
 								faceBackgroundColor.g = precentageToCenter;
 								faceBackgroundColor.a = precentageToCenter ;
 								Camera.main.backgroundColor = faceBackgroundColor;
 									
-								Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
+								Core.bitwise_and(rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]),faceSubmat,rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]));
 							
 							} else {
 								if (frameCount >= 15 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace)) {
-									faceSubmat = rgbaMat.rowRange (vertRange).colRange (horiRange);
-									faceSubmat -= new Scalar (0, 0, 0, 30);
+									faceSubmat = rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]);
+									faceSubmat -= faceSubmatColor;
 
 									faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
 									faceBackgroundColor.g = precentageToCenter;
 									faceBackgroundColor.a = precentageToCenter ;
 									Camera.main.backgroundColor = faceBackgroundColor;
 
-									Core.bitwise_and(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
+									Core.bitwise_and(rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]),faceSubmat,rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]));
 									//opposite
 //									rgbaMat -= new Scalar (0, 0, 0, 150);
 //									Core.bitwise_or(rgbaMat.rowRange (vertRange).colRange (horiRange),faceSubmat,rgbaMat.rowRange (vertRange).colRange (horiRange));
@@ -879,7 +899,33 @@ namespace AeStatix
 								}
 							}
 						}
-						Utils.matToTexture2D (rgbaMat, texture, colors);
+						if (heatmap) {
+
+							//actual analysis
+//							rgbaMat.create (rgbaMat.size (), CvType.CV_32F);
+//							Imgproc.cvtColor (resizeMat, heatmapMat, Imgproc.COLOR_RGB2HLS);
+//							Imgproc.blur (heatmapMat, heatmapMat, new Size(blurSize, blurSize) );
+//							Imgproc.resize(heatmapMat,rgbaMat, rgbaMat.size());
+
+							Imgproc.resize(resizeMat,heatmapMat, heatmapMat.size());
+//							if (faceDetection) {
+//								Core.flip (heatmapMat, heatmapMat, 1);
+//									}
+							Core.bitwise_and (heatmapMat, rgbMat, heatmapMat);
+//							Imgproc.cvtColor (rgbMat, rgbMat, Imgproc.COLOR_RGB2HSV);
+
+
+//							Imgproc.cvtColor (rgbaMat, rgbaMat, Imgproc.COLOR_RGBA2RGB);
+//							Imgproc.cvtColor (rgbMat, rgbaMat, Imgproc.COLOR_RGB2YUV);
+
+
+//							rgbaMat -= new Scalar (50, 0, 0, 0);
+							Utils.matToTexture2D (heatmapMat, texture, colors);
+
+								}else{
+									Utils.matToTexture2D (rgbaMat, texture, colors);
+								}
+
 						flippedForPhoto = false;
 					}
 				} else {
@@ -912,7 +958,7 @@ namespace AeStatix
 							&& displayCenters [q].point.y >= (frameHeight / 2) - snapToCenterSize
 							&& displayCenters [q].point.y <= (frameHeight / 2) + snapToCenterSize) {
 
-							displayCenters [q].point = new Point (rgbaMat.width () / 2, rgbaMat.height () / 2);
+							displayCenters [q].point = middleOfTheFramePoint;
 						}
 					
 						
@@ -940,7 +986,7 @@ namespace AeStatix
 			if(displayCenters[0].point.x.ToString() == "NaN"){
 				displayCenters.Clear ();
 				for (int o = 0; o <= 2; o++) {
-					displayCenters.Add (new Centers (o, new Point (0, 0)));
+					displayCenters.Add (new Centers (o, zeroPoint));
 				}
 			}
 
@@ -996,7 +1042,6 @@ namespace AeStatix
 			if (displayFacePoints.Count > 1) {
 				for (int h = 0; h < displayFacePoints.Count; h++) {
 					currentFacePoints [h] = (int) Math.Round( speed * currentFacePoints [h] + displayFacePoints [h] * (1 - speed));
-					//currentFacePoints [h].y = speed * currentFacePoints [h].y + displayFacePoints [h].y * (1 - speed);
 				}
 
 
@@ -1079,7 +1124,7 @@ namespace AeStatix
 							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_BGR2GRAY);
 
 							Imgproc.Canny (grayMat, grayMat, cannyThreshold, cannyThreshold);
-							Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
+//							Imgproc.blur (grayMat, grayMat, new Size (blurSize, blurSize));
 							if (thresh) {
 								Imgproc.threshold (grayMat, grayMat, edgeThreshold, 255, Imgproc.THRESH_BINARY);
 							}
@@ -1095,7 +1140,6 @@ namespace AeStatix
 							//TO-DO: weighted average CHANGE + track bar################################
 							Core.addWeighted (resizeMat, (1 - locationWeight), locationMat, locationWeight, 0.0, resizeMat);
 						}
-
 
 						//split channels and 
 						Core.split (resizeMat, channels);
@@ -1119,30 +1163,31 @@ namespace AeStatix
 						//Mat for detection
 						Core.flip(resizeMat,resizeMat,1);
 						Imgproc.cvtColor (resizeMat, grayMat, Imgproc.COLOR_RGB2GRAY);
+
+						//Hist correction - optional
 						Imgproc.equalizeHist (grayMat, grayMat);
 
 						// actual cascade face detection // LBS fast dataset 10% less accurate - change to haar cascade dataset at cascade initiation
 						if (cascade != null) {
-							cascade.detectMultiScale2 (grayMat, faces, maxDetections, 1.1, 2, 2, new Size (20, 20), new Size ());
+							cascade.detectMultiScale2 (grayMat, faces, maxDetections, 1.1, 2, 2, new Size (50, 50), maxFaceSize);
 							//cascade.detectMultiScale (grayMat, faces, 1.1, 2, 2, new Size (20, 20), new Size ());
 						}
 						rects = faces.toArray ();
 
 						if (rects.Length > 0  ) {
 
-//							Debug.Log ("Detected face ROI: " + rects [0]);
 							lastFaceFrame = frameCount;
 					
-							//change mat sizes
+							//change calc mats sizes according to face
 							faceRefMat.create (rects [0].size(), CvType.CV_8UC3);
 							grayFaceMat.create (rects [0].size(), CvType.CV_8UC1);
 
-							resizeMat.submat( rects [0]).copyTo (faceRefMat);
+							faceRefMat = resizeMat.submat( rects [0]);
+							//alternativly
+//							resizeMat.submat( rects [0]).copyTo (faceRefMat);
 
 							//flip values
 							Core.bitwise_not (faceRefMat, faceRefMat);
-
-							// draw faces (in update loop)
 
 							//edge detection and wights
 							if (edgeBias) {
@@ -1212,13 +1257,15 @@ namespace AeStatix
 			} else {
 				if (currentFacePoints.Count > 0) {
 
+					//map results to frame with exaggeration
 					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, (float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace), (float)rects[0].width * (exaggerateData + exaggerateDataFace) ));
 					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, (float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace), (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
 
+					//flip results horizontaly
 					point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor));
 					point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
 				}
-				}
+			}
 			centersObj.Add(new Centers(channel, point) );
 
 			return centersObj [channel];
@@ -1226,9 +1273,16 @@ namespace AeStatix
 
 		void OnEnable(){
 			// ImageCroppedEvent.OnCropped += AnalyseImage();
+
+			//resume when active
+			Time.timeScale = 1;
+
 		}
 		void OnDisable(){
 			// ImageCroppedEvent.OnCropped += AnalyseImage();
+
+			//pause when inactive
+			Time.timeScale = 0;
 
 		}
 		public void takePhoto(){
@@ -1320,8 +1374,10 @@ namespace AeStatix
 
 				if (!loactionBias && !edgeBias) {
 					//TO-DO: switch between face detectiuon ui and regular
-					GUImat = faceRefMat.clone ();
-					}
+//					GUImat = faceRefMat.clone ();
+					GUImat = blackMat.clone ();
+
+				}
 				if (loactionBias && !edgeBias && GUItexture != null) {
 					//GUImat = blackMat.clone ();
 				
@@ -1397,10 +1453,10 @@ namespace AeStatix
 
 			//TO-DO: optimize initiation with flag condition 
 			if (!faceDetection) {
-					totalDistance = (float)Math.Sqrt (((frameWidth / 2) * (frameWidth / 2)) + ((frameHeight / 2) * (frameHeight / 2)));
+				totalDistance = (float)Math.Sqrt (((frameWidth / 2) * (frameWidth / 2)) + ((frameHeight / 2) * (frameHeight / 2)));
 		
-				trackbarDiffFloat = (float)(Math.Sqrt ((
-				    (_current.x - (frameWidth / 2)) * (_current.x - (frameWidth / 2))) + ((_current.y - (frameHeight / 2)) * (_current.y - (frameHeight / 2)))));
+				trackbarDiffFloat = (float) (Math.Sqrt ((
+					(_current.x - (frameWidth / 2)) * (_current.x - (frameWidth / 2))) + ((_current.y - (frameHeight / 2)) * (_current.y - (frameHeight / 2)))));
 
 				if (trackbarDiffFloat > totalDistance - 10)
 					trackbarDiffFloat = totalDistance;
@@ -1413,17 +1469,18 @@ namespace AeStatix
 					
 
 					totalDistance = (float)Math.Sqrt (((rects[0].width / 2)*(rects[0].width / 2) +  (rects[0].height / 2)*(rects[0].height / 2)));
-					_current.x = ((frameWidth -  _current.x) * resizeFactor - rects [0].x);
-					_current.y = (  _current.y * resizeFactor - rects [0].y);
+					_current.x = (float)((frameWidth -  _current.x) * resizeFactor - rects [0].x);
+					_current.y = (float)(  _current.y * resizeFactor - rects [0].y);
 //					Debug.Log ("_current: " + _current);
 //					Imgproc.circle (rgbaMat, _current, 8, green, 13, Imgproc.LINE_AA, 0);
 
 
-					trackbarDiffFloat = (float)(Math.Sqrt ((
+					trackbarDiffFloat = (float) (Math.Sqrt ((
 						( _current.x - (rects[0].width / 2)) * (_current.x - (rects[0].width / 2))) + ((_current.y - (rects[0].height / 2)) * (_current.y - (rects[0].height / 2)))));
 
 //					Debug.Log ("total disstance: " + totalDistance);
 //					Debug.Log ("trackbarDiffFloat: " + trackbarDiffFloat);
+
 
 				} else {
 					return 0.01f;
@@ -1434,8 +1491,8 @@ namespace AeStatix
 			return (1 - trackbarDiffFloat/totalDistance);
 		}
 				public Point WeightedAverageThree(Point _redPoint, Point _greenPoint, Point _bluePoint){
-					return new Point( ((_redPoint.x * redCoeficiente) + (_greenPoint.x * greenCoeficiente) + (_bluePoint.x * blueCoeficiente)) / (redCoeficiente + greenCoeficiente + blueCoeficiente),
-						    		  ((_redPoint.y * redCoeficiente) + (_greenPoint.y * greenCoeficiente) + (_bluePoint.y * blueCoeficiente)) / (redCoeficiente + greenCoeficiente + blueCoeficiente));
+			return new Point( (int) Math.Round(((_redPoint.x * redCoeficiente) + (_greenPoint.x * greenCoeficiente) + (_bluePoint.x * blueCoeficiente)) / (redCoeficiente + greenCoeficiente + blueCoeficiente)),
+							  (int) Math.Round(  ((_redPoint.y * redCoeficiente) + (_greenPoint.y * greenCoeficiente) + (_bluePoint.y * blueCoeficiente)) / (redCoeficiente + greenCoeficiente + blueCoeficiente)));
 		}
 
 	}
