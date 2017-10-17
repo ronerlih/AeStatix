@@ -897,27 +897,27 @@ namespace AeStatix
 							for (int dotted = 10; dotted <= (frameWidth / 2); dotted += 10) {
 								if (dotted % 40 == 10 && dotted >= 110) {
 									//top left
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted)     , (frameHeight / 2) - ((frameHeight/frameWidth) * (dotted))  ), 
-														   new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) - ((frameHeight/frameWidth) * (10 + dotted))), crossColor, 1, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 2) - (dotted)     , (int)((frameHeight / 2) - ((frameHeight/frameWidth) * (dotted)))  ), 
+													 	   new Point ((int)(frameWidth / 2) - (10 + dotted), (int)((frameHeight / 2) - ((frameHeight/frameWidth) * (10 + dotted)))), crossColor, 1, Imgproc.LINE_AA, 0);
 									//buttom left
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) - (dotted),      (frameHeight / 2) + ((frameHeight / frameWidth) * (dotted))), 
-														   new Point ((frameWidth / 2) - (10 + dotted), (frameHeight / 2) + ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 1, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 2) - (dotted),      (int)((frameHeight / 2) + ((frameHeight / frameWidth) * (dotted)))), 
+														   new Point ((int)(frameWidth / 2) - (10 + dotted), (int)((frameHeight / 2) + ((frameHeight / frameWidth) * (10 + dotted)))), crossColor, 1, Imgproc.LINE_AA, 0);
 									//buttom right
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted),      (frameHeight / 2) + ((frameHeight / frameWidth) * (dotted))), 
-														   new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) + ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 1, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 2) + (dotted),      (int)((frameHeight / 2) + ((frameHeight / frameWidth) * (dotted)))), 
+														   new Point ((int)(frameWidth / 2) + (10 + dotted), (int)((frameHeight / 2) + ((frameHeight / frameWidth) * (10 + dotted)))), crossColor, 1, Imgproc.LINE_AA, 0);
 									//top right
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 2) + (dotted),      (frameHeight / 2) - ((frameHeight / frameWidth) * (dotted))), 
-														   new Point ((frameWidth / 2) + (10 + dotted), (frameHeight / 2) - ((frameHeight / frameWidth) * (10 + dotted))), crossColor, 1, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 2) + (dotted),      (int)((frameHeight / 2) - ((frameHeight / frameWidth) * (dotted)))), 
+														   new Point ((int)(frameWidth / 2) + (10 + dotted), (int)((frameHeight / 2) - ((frameHeight / frameWidth) * (10 + dotted)))), crossColor, 1, Imgproc.LINE_AA, 0);
 								}
 							}
 						}
 						if (guide) {
 							for (int dotted = 10; dotted <= (frameHeight * 2) ; dotted += 10) {
 								if (dotted % 40 == 10) {
-									Imgproc.line (rgbaMat, new Point ((frameWidth / 3), dotted), new Point (frameWidth / 3, (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point ((frameWidth * 0.666), dotted), new Point (frameWidth * 0.666, (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, frameHeight/3), new Point ((10 + dotted),  frameHeight/3), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, frameHeight* 0.666), new Point ((10 + dotted),  frameHeight* 0.666), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 3), dotted), new Point ((int)(frameWidth / 3), (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((int)(frameWidth * 2 / 3), dotted), new Point ((int)(frameWidth * 2 / 3), (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight/3), new Point ((10 + dotted),  (int)frameHeight/3), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight* 0.666), new Point ((10 + dotted),  (int)frameHeight* 0.666), crossColor, 0, Imgproc.LINE_AA, 0);
 								}
 							
 							}
