@@ -52,6 +52,10 @@
      <None Include="Assets\StreamingAssets\haarcascade_frontalface_alt.xml" />
      <None Include="Assets\OpenCVForUnity\OpenCV_LICENSE.txt" />
      <None Include="Assets\StreamingAssets\lbpcascade_frontalface.xml" />
+     <None Include="Assets\StreamingAssets\lbpcascade_frontalface_improved.xml" />
+     <None Include="Assets\lbpcascade_frontalcatface.xml" />
+     <None Include="Assets\StreamingAssets\lbpcascade_frontalcatface.xml" />
+     <None Include="Assets\bpcascade_frontalface_improved.xml" />
  <Reference Include="UnityEditor.Advertisements">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/Advertisements/Editor/UnityEditor.Advertisements.dll</HintPath>
  </Reference>
