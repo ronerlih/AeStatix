@@ -665,7 +665,7 @@ namespace AeStatix
 			frameWidth = rgbMat.width ();
 			frameHeight = rgbMat.height ();
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
-			PyrSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor ), (int)Math.Round (webCamTexture.height * resizeFactor));
+			PyrSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor/1.3 ), (int)Math.Round (webCamTexture.height * resizeFactor/1.3));
 			pyrMat = new Mat (PyrSize, CvType.CV_8UC3);
 			pyrMatRGB = new Mat (PyrSize, CvType.CV_8UC3);
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
@@ -829,11 +829,13 @@ namespace AeStatix
 							//
 							Imgproc.resize(resizeMat,pyrMat, PyrSize);
 							Imgproc.resize(rgbaMat,pyrMatRGB, PyrSize);
+//							pyrMatRGB -= new Scalar (10, 0, 0);
 							Imgproc.cvtColor (pyrMat, pyrMat, Imgproc.COLORMAP_HSV);
 							Imgproc.cvtColor (pyrMatRGB, pyrMatRGB, Imgproc.COLOR_RGBA2RGB);
 							Core.bitwise_not (pyrMat, pyrMat);
 
-							Core.bitwise_and (pyrMat, pyrMatRGB, pyrMatRGB);
+							Core.bitwise_and ( pyrMatRGB,pyrMat, pyrMatRGB);
+							Imgproc.blur (pyrMatRGB, pyrMatRGB, blurKernalSize);
 							Imgproc.resize(pyrMatRGB,rgbaMat, rgbMat.size());
 
 														if (faceDetection) {
@@ -1176,7 +1178,7 @@ namespace AeStatix
 						Imgproc.cvtColor (resizeMat, resizeMat, Imgproc.COLOR_RGB2BGR);
 
 						//edge detection and wights
-						if (edgeBias) {
+						if (edgeBias || heatmap) {
 							grayMat = resizeMat.clone();
 							Imgproc.cvtColor (grayMat, grayMat, Imgproc.COLOR_BGR2GRAY);
 
@@ -1193,7 +1195,7 @@ namespace AeStatix
 							//Debug.Log("sample pixel after calc: " + resizeMat.get (100, 100).GetValue(0));
 						}
 
-						if (loactionBias) {
+						if (loactionBias || heatmap) {
 							//TO-DO: weighted average CHANGE + track bar################################
 							Core.addWeighted (resizeMat, (1 - locationWeight), locationMat, locationWeight, 0.0, resizeMat);
 						}
@@ -1284,7 +1286,7 @@ namespace AeStatix
 //							Core.bitwise_not (faceRefMat, faceRefMat);
 
 							//edge detection and wights
-							if (edgeBias) {
+							if (edgeBias  || heatmap) {
 								Imgproc.cvtColor (faceRefMat, grayFaceMat, Imgproc.COLOR_RGB2GRAY);
 
 								Imgproc.Canny (grayFaceMat, grayFaceMat, cannyThreshold, cannyThreshold);
