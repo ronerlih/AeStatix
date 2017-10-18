@@ -57,6 +57,7 @@ namespace AeStatix
 		[Range(0,10)]
 		int exaggerateDataFace = 4;
 		Size resizeSize;
+		Size PyrSize;
 		[SerializeField]
 		[Range(0.8f,1f)]
 		float speed = 0.85f;
@@ -235,7 +236,7 @@ namespace AeStatix
 		int faceMiddleY = 0;
 		bool trackbarFace = false;
 
-		Color faceBackgroundColor = new Color (255, 255, 0);
+		Color faceBackgroundColor = new Color (255, 255, 0,255);
 		Scalar faceSubmatColor = new Scalar (0, 0, 0, 60);
 		Size maxFaceSize;
 		int rectsY;
@@ -245,9 +246,14 @@ namespace AeStatix
 		//heatmap
 		[SerializeField]
 		bool heatmap = true;
-//		[SerializeField]
-//		[Range(1,100)]
-
+		[SerializeField]
+		Size blurKernalSize = new Size (15, 15);
+		[SerializeField]
+		[Range(-10,50)]
+		int int1 =0;
+		[SerializeField]
+		[Range(-10,50)]
+		int int2 =0;
 		/////////////////////////////////
 
 		/// <summary>
@@ -337,6 +343,9 @@ namespace AeStatix
 		//photo border mat
 		Mat photoWhiteMat;
 
+		//pyramid mat for heatmap
+		Mat pyrMat;
+		Mat pyrMatRGB;
 		//cascade rotate mat
 		Mat rotateMat;
 		//channels List
@@ -543,14 +552,6 @@ namespace AeStatix
 			isInitWaiting = false;
 			hasInitDone = false;
 
-//			centersObj.Clear ();
-//			displayCenters.Clear ();
-//			currentCenters.Clear ();
-//			moments.Clear ();
-//			averageCenter = null;
-//
-//			Destroy (gameObject);
-
 			//ui reset
 			loactionBias = false;
 			edgeBias = false;
@@ -636,6 +637,14 @@ namespace AeStatix
 				rotateMat.Dispose ();
 				rotateMat = null;
 			}
+			if (pyrMat != null) {
+				pyrMat.Dispose ();
+				pyrMat = null;
+			}
+			if (pyrMatRGB != null) {
+				pyrMatRGB.Dispose ();
+				pyrMatRGB = null;
+			}
 		}
 
 		////////////
@@ -656,7 +665,9 @@ namespace AeStatix
 			frameWidth = rgbMat.width ();
 			frameHeight = rgbMat.height ();
 			resizeSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor), (int)Math.Round (webCamTexture.height * resizeFactor));
-			Size pyramidSize = new Size ((int)Math.Round( resizeSize.width/100), (int)Math.Round(resizeSize.height/100));
+			PyrSize = new Size ((int)Math.Round (webCamTexture.width * resizeFactor ), (int)Math.Round (webCamTexture.height * resizeFactor));
+			pyrMat = new Mat (PyrSize, CvType.CV_8UC3);
+			pyrMatRGB = new Mat (PyrSize, CvType.CV_8UC3);
 			resizeMat = new Mat (resizeSize, CvType.CV_8UC3);
 			rotateMat = new Mat ((int) resizeSize.width,(int)resizeSize.height, CvType.CV_8UC3);
 			heatmapMat = new Mat (webCamTexture.height, webCamTexture.width, CvType.CV_8UC3);
@@ -806,14 +817,38 @@ namespace AeStatix
 //							Imgproc.putText (rgbaMat, " W:" + rgbaMat.width () + " H:" + rgbaMat.height () + " | analysing frame every " + secondsBtwProcessing + "s", new Point (5, rgbaMat.height () - 20), 2, 1.5, UIgreen, 2, Imgproc.LINE_AA, false);
 //						}			
 
+						if (heatmap) {
+
+							//actual analysis
+							//							rgbaMat.create (rgbaMat.size (), CvType.CV_32F);
+							//							Imgproc.cvtColor (resizeMat, heatmapMat, Imgproc.COLOR_RGB2HLS);
+							//							Imgproc.blur (heatmapMat, heatmapMat, new Size(blurSize, blurSize) );
+							//							Imgproc.resize(heatmapMat,rgbaMat, rgbaMat.size());
+
+
+							//
+							Imgproc.resize(resizeMat,pyrMat, PyrSize);
+							Imgproc.resize(rgbaMat,pyrMatRGB, PyrSize);
+							Imgproc.cvtColor (pyrMat, pyrMat, Imgproc.COLORMAP_HSV);
+							Imgproc.cvtColor (pyrMatRGB, pyrMatRGB, Imgproc.COLOR_RGBA2RGB);
+							Core.bitwise_not (pyrMat, pyrMat);
+
+							Core.bitwise_and (pyrMat, pyrMatRGB, pyrMatRGB);
+							Imgproc.resize(pyrMatRGB,rgbaMat, rgbMat.size());
+
+														if (faceDetection) {
+															Core.flip (heatmapMat, heatmapMat, 1);
+															}
+
+							Utils.matToTexture2D (rgbaMat, texture, colors);
+
+						}
+
 						if (snapToCenter) {
 							SnapToCenters ();
 						}
 							
 						checkForCentersData ();
-
-						//to do: print values in face detection only when face is on 
-
 
 						// draw centers
 						if (weightedAverage) {
@@ -822,9 +857,10 @@ namespace AeStatix
 							//Imgproc.putText (rgbaMat, "  weighted average", averageCenter.point, 2, 2, averageColor, 2, Imgproc.LINE_AA, false);
 							}
 						} else {
-							if (!faceDetection || (faceDetection && frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace))) {
+							if (!faceDetection || (faceDetection == true && frameCount >= 5 && (frameCount - lastFaceFrame <= numberOfFramesWithNoFace))) {
 
 								for (int c = 0; c < currentCenters.Count; c++) {
+
 									switch (c) {
 									case 0:
 										Imgproc.circle (rgbaMat, currentCenters [c].point, 8, red, 13, Imgproc.LINE_AA, 0);
@@ -846,6 +882,8 @@ namespace AeStatix
 								}
 							}
 						}
+
+
 
 						//trackBar
 						if (showTrackBar) {
@@ -881,7 +919,6 @@ namespace AeStatix
 
 								faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
 								faceBackgroundColor.g = precentageToCenter;
-								faceBackgroundColor.a = precentageToCenter ;
 								Camera.main.backgroundColor = faceBackgroundColor;
 									
 								Core.bitwise_and(rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]),faceSubmat,rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]));
@@ -893,7 +930,6 @@ namespace AeStatix
 
 									faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
 									faceBackgroundColor.g = precentageToCenter;
-									faceBackgroundColor.a = precentageToCenter ;
 									Camera.main.backgroundColor = faceBackgroundColor;
 
 									Core.bitwise_and(rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]),faceSubmat,rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]));
@@ -929,49 +965,19 @@ namespace AeStatix
 						if (guide) {
 							for (int dotted = 10; dotted <= (frameHeight * 2) ; dotted += 10) {
 								if (dotted % 40 == 10) {
-									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 3), dotted),     new Point ((int)(frameWidth / 3), (10 + dotted)),     crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point ((int)(frameWidth / 3), dotted), new Point ((int)(frameWidth / 3), (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
 									Imgproc.line (rgbaMat, new Point ((int)(frameWidth * 2 / 3), dotted), new Point ((int)(frameWidth * 2 / 3), (10 + dotted)), crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight/3),        new Point ((10 + dotted),  (int)frameHeight/3),       crossColor, 0, Imgproc.LINE_AA, 0);
-									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight*2/3),   new Point ((10 + dotted),  (int)(int)frameHeight*2/3),  crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight/3), new Point ((10 + dotted), (int)frameHeight/3), crossColor, 0, Imgproc.LINE_AA, 0);
+									Imgproc.line (rgbaMat, new Point (dotted, (int)frameHeight*2/3), new Point ((10 + dotted), (int)(int)frameHeight*2/3), crossColor, 0, Imgproc.LINE_AA, 0);
 								}
 							
 							}
 						}
-						if (heatmap) {
 
-							//actual analysis
-//							rgbaMat.create (rgbaMat.size (), CvType.CV_32F);
-//							Imgproc.cvtColor (resizeMat, heatmapMat, Imgproc.COLOR_RGB2HLS);
-//							Imgproc.blur (heatmapMat, heatmapMat, new Size(blurSize, blurSize) );
-//							Imgproc.resize(heatmapMat,rgbaMat, rgbaMat.size());
 
-							//color
-//							Imgproc.resize(resizeMat,heatmapMat, heatmapMat.size());
-//
-////							
-//							Core.bitwise_and (heatmapMat, rgbMat, heatmapMat);
-
-							//
-							Imgproc.resize(resizeMat,heatmapMat, heatmapMat.size());
-							Imgproc.cvtColor (rgbaMat, rgbaMat, Imgproc.COLOR_RGBA2RGB);
-							Imgproc.cvtColor (heatmapMat, heatmapMat, Imgproc.COLOR_RGB2HLS);
-							Core.bitwise_not (heatmapMat, heatmapMat);
-
-							Core.bitwise_and (heatmapMat, rgbaMat, heatmapMat);
-							Imgproc.cvtColor (rgbaMat, rgbaMat, Imgproc.COLOR_RGB2RGBA);
-
-//							if (faceDetection) {
-//								Core.flip (heatmapMat, heatmapMat, 1);
-//								}
-
-							Utils.matToTexture2D (heatmapMat, texture, colors);
-
-								}else{
-									Utils.matToTexture2D (rgbaMat, texture, colors);
-								}
-
-						flippedForPhoto = false;
 					}
+					Utils.matToTexture2D (rgbaMat, texture, colors);
+					flippedForPhoto = false;
 				} else {
 					if (faceDetection && !flippedForPhoto) {
 						Core.flip (rgbMat, rgbMat, 1);
@@ -1020,6 +1026,7 @@ namespace AeStatix
 
 								displayCenters [q].point = new Point (faceMiddleX, faceMiddleY);
 						}
+
 						}
 					}
 				}
@@ -1048,8 +1055,10 @@ namespace AeStatix
 			if (displayCenters.Count > 1) {
 
 				for (int h = 0; h < displayCenters.Count; h++) {
+
 					currentCenters [h].point.x = (int)Math.Round( speed * currentCenters [h].point.x + displayCenters [h].point.x * (1 - speed));
 					currentCenters [h].point.y = (int)Math.Round( speed * currentCenters [h].point.y + displayCenters [h].point.y * (1 - speed));
+
 				}
 
 				//centers center - weighted average
@@ -1086,6 +1095,7 @@ namespace AeStatix
 			if (displayFacePoints.Count > 1) {
 				for (int h = 0; h < displayFacePoints.Count; h++) {
 					currentFacePoints [h] = (int) Math.Round( speed * currentFacePoints [h] + displayFacePoints [h] * (1 - speed));
+//					Debug.Log ("currentFacePoints[h]: " + currentFacePoints [h]);
 				}
 
 
@@ -1239,6 +1249,7 @@ namespace AeStatix
 
 						if (rects.Length > 0  ) {
 
+							lastFaceFrame = frameCount;
 							if (iosBuild) {
 								//90 deg clockwise transformation
 //								rectsY = rects [0].y;
@@ -1326,11 +1337,6 @@ namespace AeStatix
 			moments.Add(Imgproc.moments(_mat,false));
 			point = new Point ( (int) Math.Round((moments [channel].m10 / moments [channel].m00)), (int)Math.Round( (moments [channel].m01 / moments [channel].m00)));
 
-			//TO-DO: figure out the math
-			//flipping mat first iteration is negative
-//			Debug.Log("BFR 1st itiration, point.y: " + point.y);
-			Debug.Log ("point: " + point);
-
 			if (point.x.ToString() == "NaN" || point.x < 0 || point.y < 0) {
 				point = middleOfTheFramePoint;
 				Debug.Log ("INSIDE CATCH point: " + point);
@@ -1342,17 +1348,21 @@ namespace AeStatix
 			} else {
 				if (currentFacePoints.Count > 0) {
 
-					Debug.Log ("F.Detection point: " + point);
 					//map results to frame with exaggeration
-					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, (float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace), (float)rects[0].width * (exaggerateData + exaggerateDataFace) ));
-					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, (float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace), (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
+//					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, (float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace), (float)rects[0].width * (exaggerateData + exaggerateDataFace) ));
+//					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, (float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace), (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
 
-					Debug.Log ("AFTER MAP point: " + point);
+					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, 
+						(float)rects[0].width * (exaggerateData + exaggerateDataFace) ,(float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace)));
+					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, 
+						(float)rects[0].height * (exaggerateData + exaggerateDataFace),(float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
+
+//					Debug.Log ("AFTER MAP point: " + point);
 
 					//flip results horizontaly
 					point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor));
 					point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
-					Debug.Log ("AFTER FLIP point: " + point);
+
 
 
 				}
