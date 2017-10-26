@@ -1,6 +1,8 @@
 ﻿using System;
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
@@ -36,7 +38,6 @@ namespace AeStatix
 				point = Point;
 			}
 		}
-
 		//frame processing
 		//show mats
 		[Header("Analysis")]
@@ -392,6 +393,8 @@ namespace AeStatix
 			weightedAverage = false;
 			cross = false;
 			guide = false;
+			faceDetection = false;
+			heatmap = false;
 
 			//build settings
 			if (iosBuild) {
@@ -555,6 +558,9 @@ namespace AeStatix
 			//ui reset
 			loactionBias = false;
 			edgeBias = false;
+			faceDetection = false;
+			heatmap = false;
+
 			//individualColorCoeficients = false;
 
 			if (webCamTexture != null) {
@@ -919,9 +925,10 @@ namespace AeStatix
 								faceSubmat = rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]);
 								faceSubmat -= faceSubmatColor;
 
-								faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
-								faceBackgroundColor.g = precentageToCenter;
-								Camera.main.backgroundColor = faceBackgroundColor;
+								//change rect color
+//								faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
+//								faceBackgroundColor.g = precentageToCenter;
+//								Camera.main.backgroundColor = faceBackgroundColor;
 									
 								Core.bitwise_and(rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]),faceSubmat,rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]));
 							
@@ -930,9 +937,10 @@ namespace AeStatix
 									faceSubmat = rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]);
 									faceSubmat -= faceSubmatColor;
 
-									faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
-									faceBackgroundColor.g = precentageToCenter;
-									Camera.main.backgroundColor = faceBackgroundColor;
+									//change rect color
+//									faceBackgroundColor.r = (1 - precentageToCenter) - 0.2f;
+//									faceBackgroundColor.g = precentageToCenter;
+//									Camera.main.backgroundColor = faceBackgroundColor;
 
 									Core.bitwise_and(rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]),faceSubmat,rgbaMat.rowRange (currentFacePoints [1], currentFacePoints [3]).colRange (currentFacePoints [0], currentFacePoints [2]));
 									//opposite
@@ -1122,6 +1130,7 @@ namespace AeStatix
 					///////////
 
 					if (fileUpload != null) {
+						#if UNITY_EDITOR
 
 						fileUploadFlag = true;
 
@@ -1151,7 +1160,8 @@ namespace AeStatix
 						//	Utils.matToTexture2D (fileUploadMat, fileUpload, fileColors);
 						Imgproc.resize (fileUploadMat, resizeMat, resizeSize, 0.5, 0.5, Core.BORDER_DEFAULT);
 
-
+					#endif
+						
 					} else {
 							if (fileUploadFlag) {
 							//return texture to camera after file upload
@@ -1170,8 +1180,9 @@ namespace AeStatix
 					if (!faceDetection) {
 
 						//flip values
-						if (frameProcessingInit == true) {
+						if (frameProcessingInit == true ) {
 							Core.bitwise_not (resizeMat, resizeMat);
+
 						}
 
 						//flip colors position
@@ -1334,39 +1345,43 @@ namespace AeStatix
 
 		public Centers getCenterPointFromMat(Mat _mat, int channel){
 
-		
-			// 3rd order moment center of mass
-			moments.Add(Imgproc.moments(_mat,false));
-			point = new Point ( (int) Math.Round((moments [channel].m10 / moments [channel].m00)), (int)Math.Round( (moments [channel].m01 / moments [channel].m00)));
-
-			if (point.x.ToString() == "NaN" || point.x < 0 || point.y < 0) {
+			if (frameCount <= 1) {
 				point = middleOfTheFramePoint;
-				Debug.Log ("INSIDE CATCH point: " + point);
-			}
-			//resize point up
-			if (!faceDetection) {
-				point.x = (int)Math.Round( map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData));
-				point.y =(int)Math.Round( map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData));
 			} else {
-				if (currentFacePoints.Count > 0) {
+				
+				// 3rd order moment center of mass
+				moments.Add (Imgproc.moments (_mat, false));
+				point = new Point ((int)Math.Round ((moments [channel].m10 / moments [channel].m00)), (int)Math.Round ((moments [channel].m01 / moments [channel].m00)));
 
-					//map results to frame with exaggeration
+				if (point.x.ToString () == "NaN" || point.x < 0 || point.y < 0) {
+					point = middleOfTheFramePoint;
+					Debug.Log ("INSIDE CATCH point: " + point);
+				}
+				//resize point up
+				if (!faceDetection) {
+					point.x = (int)Math.Round (map ((float)point.x, 0, (float)resizeSize.width, (float)webCamTexture.width - (float)webCamTexture.width * exaggerateData, (float)webCamTexture.width * exaggerateData));
+					point.y = (int)Math.Round (map ((float)point.y, 0, (float)resizeSize.height, (float)webCamTexture.height - (float)webCamTexture.height * exaggerateData, (float)webCamTexture.height * exaggerateData));
+				} else {
+					if (currentFacePoints.Count > 0) {
+
+						//map results to frame with exaggeration
 //					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, (float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace), (float)rects[0].width * (exaggerateData + exaggerateDataFace) ));
 //					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, (float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace), (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
 
-					point.x = (int)Math.Round( map ((float)point.x, 0, (float)rects[0].width, 
-						(float)rects[0].width * (exaggerateData + exaggerateDataFace) ,(float)rects[0].width - (float)rects[0].width * (exaggerateData + exaggerateDataFace)));
-					point.y =(int)Math.Round( map ((float)point.y, 0, (float)rects[0].height, 
-						(float)rects[0].height * (exaggerateData + exaggerateDataFace),(float)rects[0].height - (float)rects[0].height * (exaggerateData + exaggerateDataFace)));
+						point.x = (int)Math.Round (map ((float)point.x, 0, (float)rects [0].width, 
+							(float)rects [0].width * (exaggerateData + exaggerateDataFace), (float)rects [0].width - (float)rects [0].width * (exaggerateData + exaggerateDataFace)));
+						point.y = (int)Math.Round (map ((float)point.y, 0, (float)rects [0].height, 
+							(float)rects [0].height * (exaggerateData + exaggerateDataFace), (float)rects [0].height - (float)rects [0].height * (exaggerateData + exaggerateDataFace)));
 
 //					Debug.Log ("AFTER MAP point: " + point);
 
-					//flip results horizontaly
-					point.x = (int)Math.Round((webCamTexture.width - (point.x + rects [0].x) / resizeFactor));
-					point.y = (int)Math.Round((point.y + rects [0].y) / resizeFactor );
+						//flip results horizontaly
+						point.x = (int)Math.Round ((webCamTexture.width - (point.x + rects [0].x) / resizeFactor));
+						point.y = (int)Math.Round ((point.y + rects [0].y) / resizeFactor);
 
 
 
+					}
 				}
 			}
 			centersObj.Add(new Centers(channel, point) );
@@ -1379,6 +1394,7 @@ namespace AeStatix
 
 			//resume when active
 			Time.timeScale = 1;
+			Debug.Log ("<unity> resumed view");
 
 		}
 		void OnDisable(){
@@ -1386,6 +1402,7 @@ namespace AeStatix
 
 			//pause when inactive
 			Time.timeScale = 0;
+			Debug.Log ("<unity> paused view");
 
 		}
 		public void takePhoto(){
@@ -1509,6 +1526,12 @@ namespace AeStatix
 		}
 
 		//ui controls
+		public void showFace(){
+			faceDetection = !faceDetection;
+		}
+		public void showHeatmap(){
+			heatmap = !heatmap;
+		}
 		public void showEdge(){
 			edgeBias = !edgeBias;
 		}
